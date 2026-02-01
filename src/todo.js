@@ -1,4 +1,6 @@
-class TodoItem {
+import { format } from "date-fns";
+
+export class TodoItem {
     /*
     What am I gonna want in here?
     At minimum, per the brief:
@@ -20,8 +22,84 @@ class TodoItem {
     question: do I want todo items to be aware of what list they are on?
         -for now, I'm leaning toward no.
     */
-    constructor() {
+    #title;
+    #description;
+    #dueDate;
+    #priority;
 
+    constructor({ title, description, dueDate, priority } = {}) {
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.priority = priority;
+    }
+
+    get title() {
+        return this.#title;
+    }
+
+    set title(title) {
+        if (!title) {
+            console.log("hi")
+            this.#title = "";
+        } else {
+            this.#title = String(title);
+        };
+    }
+
+    get description() {
+        return this.#description;
+    }
+
+    set description(description) {
+        if (!description) {
+            this.#description = "";
+        } else {
+            this.#description = String(description);
+        }
+    }
+
+    get dueDate() {
+        return format(this.#dueDate, "MMM. d, y");
+    }
+
+    set dueDate(dueDate) {
+        if (dueDate === undefined) {
+            this.#dueDate = new Date();
+        } else {
+            dueDate = new Date(dueDate);
+            if (!dueDate) {
+                throw new Error(`${dueDate} is not a valid date.`);
+            }
+            this.#dueDate = dueDate;
+        }
+    }
+
+    get priority() {
+        return this.#priority
+    }
+
+    set priority(priority) {
+        if (priority === undefined) {
+            this.#priority = 0;
+        } else {
+            priority = Number(priority);
+
+            if (priority < 0 || priority > 5) {
+                throw new Error("Priority must be between 0 and 5.");
+            }
+
+            this.#priority = priority;
+        }
+    }
+
+    get() {
+        return {
+            title: this.title,
+            description: this.description,
+            dueDate: this.dueDate,
+            priority: this.priority
+        }
     }
 }
 

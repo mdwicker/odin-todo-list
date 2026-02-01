@@ -1,5 +1,7 @@
 import "./reset.css";
 import "./styles.css";
+import { TodoItem } from './todo.js'
+
 
 /*
 PLAN:
