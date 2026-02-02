@@ -2,6 +2,14 @@ import "./reset.css";
 import "./styles.css";
 import { TodoItem } from './todo.js'
 
+let item = new TodoItem({
+    title: "work",
+    description: "Lots to do",
+    dueDate: "Feb 4 2026",
+    priority: 2,
+})
+
+
 
 /*
 PLAN:

@@ -26,12 +26,14 @@ export class TodoItem {
     #description;
     #dueDate;
     #priority;
+    #isComplete;
 
     constructor({ title, description, dueDate, priority } = {}) {
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.priority = priority;
+        this.#isComplete = false;
     }
 
     get title() {
@@ -60,7 +62,7 @@ export class TodoItem {
     }
 
     get dueDate() {
-        return format(this.#dueDate, "MMM. d, y");
+        return this.#dueDate;
     }
 
     set dueDate(dueDate) {
@@ -93,11 +95,23 @@ export class TodoItem {
         }
     }
 
-    get() {
+    toggleComplete({ complete } = {}) {
+        if (complete === undefined) {
+            this.#isComplete = !this.#isComplete;
+        } else {
+            this.#isComplete = complete;
+        }
+    }
+
+    get isComplete() {
+        return this.#isComplete;
+    }
+
+    toJson() {
         return {
             title: this.title,
             description: this.description,
-            dueDate: this.dueDate,
+            dueDate: format(this.#dueDate, "yyyy-mm-dd"),
             priority: this.priority
         }
     }
