@@ -3,16 +3,16 @@ import { format } from "date-fns";
 export class TodoItem {
     static usedIds = new Set();
 
-    static addUsedId(id) {
+    static #addUsedId(id) {
         if (this.usedIds.has(id)) {
             throw new Error(`ID ${id} already used.`)
         }
-        else this.usedIds.add(id);
+        else this.usedIds.add(String(id));
     }
 
-    static nextId() {
+    static #nextId() {
         const id = Math.max(0, ...this.usedIds) + 1;
-        this.addUsedId(id);
+        this.#addUsedId(id);
         return id;
     }
 
@@ -24,8 +24,13 @@ export class TodoItem {
     #priority;
     #isComplete;
 
-    constructor({ title, listId = 1, description, dueDate, priority, isComplete } = {}) {
-        this.#id = TodoItem.nextId();
+    constructor({ id, listId = 1, title, description, dueDate, priority, isComplete } = {}) {
+        if (id === undefined) {
+            this.#id = String(TodoItem.#nextId());
+        } else {
+            TodoItem.#addUsedId(id);
+            this.#id = String(id);
+        }
         this.listId = listId;
 
         this.title = title;
@@ -111,6 +116,8 @@ export class TodoItem {
 
     toJson() {
         return {
+            id: this.#id,
+            listId: this.listId,
             title: this.title,
             description: this.description,
             dueDate: format(this.#dueDate, "yyyy-MM-dd"),
@@ -121,34 +128,29 @@ export class TodoItem {
 }
 
 export class TodoList {
-    #id;
-    #title;
-    #items = [];
-
     static usedIds = new Set();
 
-    static addUsedId(id) {
-        if (this.usedIds.has(id)) {
-            throw new Error(`ID ${id} already used.`)
-        }
-        else this.usedIds.add(id);
+    static #addUsedId(id) {
+        this.usedIds.add(String(id));
     }
 
-    static nextId() {
+    static #nextId() {
         const id = Math.max(0, ...this.usedIds) + 1;
-        this.addUsedId(id);
+        this.#addUsedId(id);
         return id;
     }
 
-    constructor({ title = "Main", items = [], id } = {}) {
+    #id;
+    #title;
+
+    constructor({ title = "Main", id } = {}) {
         if (id === undefined) {
-            this.#id = TodoList.nextId();
+            this.#id = String(TodoList.#nextId());
         } else {
-            TodoList.addUsedId(id);
-            this.#id = id;
+            TodoList.#addUsedId(id);
+            this.#id = String(id);
         }
         this.title = title;
-        // this.addItems(items);
     }
 
     get id() {
@@ -167,49 +169,129 @@ export class TodoList {
         }
     }
 
-    addItems(items) {
-        if (items) {
-            this.#items.push(
-                ...items.map(item => {
-                    if (item instanceof TodoItem) return item;
-                    return new TodoItem(item);
-                })
-            )
-        }
-    }
-
-    getItems({ filter, sort } = {}) {
-        let items = [...this.#items];
-        if (filter) {
-            items = items.filter(filter);
-        }
-        if (sort) {
-            items = items.sort(sort);
-        }
-        return items;
-    }
-
-    itemsToJson() {
-        return this.#items.map(item => item.toJson());
-    }
-
     toJson() {
         return {
             id: this.#id,
             title: this.#title,
-            items: this.itemsToJson()
         }
     }
 }
 
-/*
-Other stuff that needs doing here:
-- Creating and deleting todo items (which means STORING somewhere)
-- Creating and deleting todo lists
-- initializing the General/Main/something list
-- handling item storage?
-- responding to queries about todo lists and items? probably.
+export const todoController = (function () {
+    const items = {};
+    const lists = {};
 
-SO is all that something that should be in another module/class/iife/something
-of that sort? idk, for now I'm leaning toward NOT, honestly.
-*/
+    lists["1"] = new TodoList({ title: "Main", id: "1" });
+
+    const getItem = function (id) {
+        const item = items[String(id)];
+        if (!item) {
+            throw new Error(`Item ${id} not found.`);
+        }
+        return item;
+    }
+
+    const getList = function (id) {
+        const list = lists[String(id)];
+        if (!list) {
+            throw new Error(`List ${id} not found.`);
+        }
+        return list;
+    }
+
+    const getItems = function ({ listId, filter, sort } = {}) {
+        let itemsToGet = Object.values(items);
+
+        if (listId) {
+            itemsToGet = itemsToGet.filter(item => item.listId === String(listId));
+        }
+
+        if (filter) {
+            itemsToGet = itemsToGet.filter(filter);
+        }
+
+        if (sort) {
+            itemsToGet = itemsToGet.sort(sort);
+        }
+
+        return itemsToGet;
+    }
+
+    const getLists = function () {
+        return Object.values(lists);
+    }
+
+    const addItem = function (info) {
+        const item = new TodoItem(info);
+        items[String(item.id)] = item;
+        return item;
+    }
+
+    const editItem = function (id, fieldsToEdit) {
+        const item = getItem(id)
+
+        const skipFields = new Set(["id", "listId", "isComplete"]);
+
+        for (const [field, value] of Object.entries(fieldsToEdit)) {
+            if (skipFields.has(field)) continue;
+            if (field in item) item[field] = value;
+        }
+
+        return item;
+    }
+
+    const toggleItemCompletion = function (id, { complete } = {}) {
+        const item = getItem(id);
+        item.toggleComplete({ complete });
+    }
+
+    const removeItem = function (id) {
+        if (id in items) {
+            delete items[String(id)];
+        }
+    }
+
+    const moveItem = function (itemId, targetListId) {
+        if (!lists[String(targetListId)]) {
+            throw new Error(`List ${targetListId} not found.`);
+        }
+        const item = getItem(itemId);
+        item.listId = String(targetListId);
+    }
+
+    const addList = function (info) {
+        const list = new TodoList(info);
+        lists[String(list.id)] = list;
+        return list;
+    }
+
+    const editList = function (id, fieldsToEdit) {
+        const list = getList(id);
+
+        for (const field in fieldsToEdit) {
+            if (field in list) {
+                list[field] = fieldsToEdit[field];
+            }
+        }
+
+        return list;
+    }
+
+    const removeList = function (id) {
+        if (id == "1") {
+            return; // Cannot delete Main list.
+        }
+        const list = getList(id);
+        delete lists[String(list.id)];
+        const listItems = getItems({ listId: id });
+        listItems.forEach(item => removeItem(item.id));
+        return { list, items: listItems };
+    }
+
+
+    return {
+        getItem, getList, getItems, getLists,
+        addItem, removeItem, editItem, moveItem, toggleItemCompletion,
+        addList, editList, removeList,
+    }
+})();
