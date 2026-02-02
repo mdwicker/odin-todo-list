@@ -1,6 +1,6 @@
 import "./reset.css";
 import "./styles.css";
-import { TodoItem } from './todo.js'
+import { TodoItem, TodoList } from './todo.js'
 
 let item = new TodoItem({
     title: "work",
@@ -8,6 +8,11 @@ let item = new TodoItem({
     dueDate: "Feb 4 2026",
     priority: 2,
 })
+
+
+let list = new TodoList();
+list.title = "stuff";
+list.addItems([item]);
 
 
 

@@ -1,39 +1,18 @@
 import { format } from "date-fns";
 
 export class TodoItem {
-    /*
-    What am I gonna want in here?
-    At minimum, per the brief:
-     - title
-     - description
-     - dueDate
-     - priority
-    I also want:
-     - type (email, phone call, etc). This could be just a couple of optional checkboxes.
-     - notes (so you can note down information that will help accomplish it)
-     - maybe checklist, for complex tasks.
-
-    What should it be able to do?
-     - be created, lol. really, that's handled elsewhere.
-     - be edited? yes. this could be with seperate functions, in fact maybe better
-     - so, settitle, setdescription, etc.
-     - mark as coomplete/incomplete
-    
-    question: do I want todo items to be aware of what list they are on?
-        -for now, I'm leaning toward no.
-    */
     #title;
     #description;
     #dueDate;
     #priority;
     #isComplete;
 
-    constructor({ title, description, dueDate, priority } = {}) {
+    constructor({ title, description, dueDate, priority, isComplete } = {}) {
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.priority = priority;
-        this.#isComplete = false;
+        this.#isComplete = isComplete ?? false;
     }
 
     get title() {
@@ -42,7 +21,6 @@ export class TodoItem {
 
     set title(title) {
         if (!title) {
-            console.log("hi")
             this.#title = "";
         } else {
             this.#title = String(title);
@@ -69,11 +47,11 @@ export class TodoItem {
         if (dueDate === undefined) {
             this.#dueDate = new Date();
         } else {
-            dueDate = new Date(dueDate);
-            if (!dueDate) {
+            const date = new Date(dueDate);
+            if (isNaN(date)) {
                 throw new Error(`${dueDate} is not a valid date.`);
             }
-            this.#dueDate = dueDate;
+            this.#dueDate = date;
         }
     }
 
@@ -87,8 +65,8 @@ export class TodoItem {
         } else {
             priority = Number(priority);
 
-            if (priority < 0 || priority > 5) {
-                throw new Error("Priority must be between 0 and 5.");
+            if (!Number.isInteger(priority) || priority < 0 || priority > 5) {
+                throw new Error("Priority must be an integer between 0 and 5.");
             }
 
             this.#priority = priority;
@@ -111,23 +89,61 @@ export class TodoItem {
         return {
             title: this.title,
             description: this.description,
-            dueDate: format(this.#dueDate, "yyyy-mm-dd"),
-            priority: this.priority
+            dueDate: format(this.#dueDate, "yyyy-MM-dd"),
+            priority: String(this.priority),
+            isComplete: this.#isComplete
         }
     }
 }
 
-class TodoList {
-    /*
-    Ok, what do I want included in here? This needs to be able to:
-    add a todo item, remove a todo item. It probably should not
-    be incharge of CREATING or DELETING items, just of handling
-    whether or not they are on a particular list.
-    It should also be able to sort items (maybe manually?).
-    It needs to have a title, and honestly maybe that's about it...
-    */
-    constructor() {
+export class TodoList {
+    #title;
+    #items = [];
 
+    constructor({ title = "Main", items = [] } = {}) {
+        this.title = title;
+        this.addItems(items);
+    }
+
+    get title() {
+        return this.#title;
+    }
+
+    set title(title) {
+        if (!title) {
+            this.#title = "";
+        } else {
+            this.#title = title;
+        }
+    }
+
+    addItems(items) {
+        if (items) {
+            this.#items.push(
+                ...items.map(item => {
+                    if (item instanceof TodoItem) return item;
+                    return new TodoItem(item);
+                })
+            )
+        }
+    }
+
+    getItems({ filter, sort } = {}) {
+        let items = [...this.#items];
+        if (filter) {
+            items = items.filter(filter);
+        }
+        if (sort) {
+            items = items.sort(sort);
+        }
+        return items;
+    }
+
+    toJson() {
+        return {
+            title: this.#title,
+            items: this.#items.map(item => item.toJson())
+        }
     }
 }
 
