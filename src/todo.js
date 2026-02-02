@@ -1,18 +1,42 @@
 import { format } from "date-fns";
 
 export class TodoItem {
+    static usedIds = new Set();
+
+    static addUsedId(id) {
+        if (this.usedIds.has(id)) {
+            throw new Error(`ID ${id} already used.`)
+        }
+        else this.usedIds.add(id);
+    }
+
+    static nextId() {
+        const id = Math.max(0, ...this.usedIds) + 1;
+        this.addUsedId(id);
+        return id;
+    }
+
+    #id;
+    listId;
     #title;
     #description;
     #dueDate;
     #priority;
     #isComplete;
 
-    constructor({ title, description, dueDate, priority, isComplete } = {}) {
+    constructor({ title, listId = 1, description, dueDate, priority, isComplete } = {}) {
+        this.#id = TodoItem.nextId();
+        this.listId = listId;
+
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
         this.priority = priority;
         this.#isComplete = isComplete ?? false;
+    }
+
+    get id() {
+        return this.#id;
     }
 
     get title() {
@@ -97,12 +121,38 @@ export class TodoItem {
 }
 
 export class TodoList {
+    #id;
     #title;
     #items = [];
 
-    constructor({ title = "Main", items = [] } = {}) {
+    static usedIds = new Set();
+
+    static addUsedId(id) {
+        if (this.usedIds.has(id)) {
+            throw new Error(`ID ${id} already used.`)
+        }
+        else this.usedIds.add(id);
+    }
+
+    static nextId() {
+        const id = Math.max(0, ...this.usedIds) + 1;
+        this.addUsedId(id);
+        return id;
+    }
+
+    constructor({ title = "Main", items = [], id } = {}) {
+        if (id === undefined) {
+            this.#id = TodoList.nextId();
+        } else {
+            TodoList.addUsedId(id);
+            this.#id = id;
+        }
         this.title = title;
-        this.addItems(items);
+        // this.addItems(items);
+    }
+
+    get id() {
+        return this.#id;
     }
 
     get title() {
@@ -139,10 +189,15 @@ export class TodoList {
         return items;
     }
 
+    itemsToJson() {
+        return this.#items.map(item => item.toJson());
+    }
+
     toJson() {
         return {
+            id: this.#id,
             title: this.#title,
-            items: this.#items.map(item => item.toJson())
+            items: this.itemsToJson()
         }
     }
 }

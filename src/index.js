@@ -2,17 +2,30 @@ import "./reset.css";
 import "./styles.css";
 import { TodoItem, TodoList } from './todo.js'
 
-let item = new TodoItem({
-    title: "work",
-    description: "Lots to do",
-    dueDate: "Feb 4 2026",
-    priority: 2,
-})
+const fillerItems = [
+    new TodoItem({ title: "Laundry", description: "Wash and fold", dueDate: "2026-02-03", priority: 1 }),
+    new TodoItem({ title: "Grocery Shopping", description: "Eggs, milk, bread", dueDate: "2026-02-04", priority: 3 }),
+    new TodoItem({ title: "Fix Sink", description: "Leaky faucet in kitchen", dueDate: "2026-02-05", priority: 5 }),
+    new TodoItem({ title: "Read Book", description: "Finish chapter 4", dueDate: "2026-02-03", priority: 0 }),
+    new TodoItem({ title: "Gym Session", description: "Leg day", dueDate: "2026-02-06", priority: 2, isComplete: true }),
+    new TodoItem({ title: "Doctor Appt", description: "Annual checkup", dueDate: "2026-02-15", priority: 4 }),
+    new TodoItem({ title: "Call Mom", description: "Catch up", dueDate: "2026-02-08", priority: 1 }),
+    new TodoItem({ title: "Pay Rent", description: "Don't be late!", dueDate: "2026-02-01", priority: 5, isComplete: true }),
+    new TodoItem({ title: "Walk Dog", description: "Park route", dueDate: "2026-02-02", priority: 2 }),
+    new TodoItem({ title: "Code Project", description: "Refactor TodoList", dueDate: "2026-02-10", priority: 4 }),
+    new TodoItem({ title: "Mow Lawn", description: "Backyard only", dueDate: "2026-02-12", priority: 1 }),
+    new TodoItem({ title: "Buy Gift", description: "Sarah's birthday", dueDate: "2026-02-18", priority: 3 }),
+    new TodoItem({ title: "Car Wash", description: "Interior vacuum too", dueDate: "2026-02-14", priority: 0 }),
+    new TodoItem({ title: "Dentist", description: "Cleaning at 2pm", dueDate: "2026-02-20", priority: 4 }),
+    new TodoItem({ title: "Yoga", description: "30 min flow", dueDate: "2026-02-07", priority: 1 }),
+    new TodoItem({ title: "Water Plants", description: "Check soil moisture", dueDate: "2026-02-09", priority: 0 }),
+    new TodoItem({ title: "Organize Desk", description: "Clear the clutter", dueDate: "2026-02-11", priority: 2 }),
+    new TodoItem({ title: "Meal Prep", description: "Chicken and rice", dueDate: "2026-02-08", priority: 3 }),
+    new TodoItem({ title: "Study JS", description: "Practice Classes", dueDate: "2026-02-13", priority: 5 }),
+    new TodoItem({ title: "Trash Day", description: "Take bins to curb", dueDate: "2026-02-05", priority: 2, isComplete: true })
+];
 
-
-let list = new TodoList();
-list.title = "stuff";
-list.addItems([item]);
+const mainList = new TodoList({ title: "main" });
 
 
 
