@@ -1,0 +1,48 @@
+.container {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "header  header"
+    "sidebar main";
+  width: 100vw;
+  min-height: 100vh;
+}
+
+header {
+  grid-area: header;
+  background-color: palegoldenrod;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar {
+  grid-area: sidebar;
+  background-color: antiquewhite;
+  width: 200px;
+}
+
+.main {
+  background-color: paleturquoise;
+}
+
+.list-header {
+  height: 50px;
+  background-color: bisque;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+}
+
+.options {
+  display: flex;
+  gap: 12px;
+  padding-right: 20px;
+}
+
+.page-title {
+  font-size: 2rem;
+  text-align: center;
+}

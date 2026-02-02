@@ -30,7 +30,10 @@ for (const item of fillerItems) {
     todoController.addItem(item);
 }
 
-console.log(todoController.getItems())
+todoController.addList({ title: "Work" });
+
+todoController.moveItem(2, 2);
+
 
 /*
 PLAN:

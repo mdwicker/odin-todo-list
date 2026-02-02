@@ -24,7 +24,7 @@ export class TodoItem {
     #priority;
     #isComplete;
 
-    constructor({ id, listId = 1, title, description, dueDate, priority, isComplete } = {}) {
+    constructor({ id, listId = "1", title, description, dueDate, priority, isComplete } = {}) {
         if (id === undefined) {
             this.#id = String(TodoItem.#nextId());
         } else {
