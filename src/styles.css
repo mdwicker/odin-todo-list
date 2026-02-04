@@ -33,7 +33,6 @@ main {
 }
 
 header {
-  background-color: bisque;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -71,14 +70,34 @@ header button {
 }
 
 .todo-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
   width: 100%;
   padding: 8px;
   border-radius: 5px;
   border: 1px solid black;
   background-color: lightcyan;
+}
+
+.todo-item-main {
+  display: flex;
+  justify-content: space-between;
+}
+
+.todo-item-details {
+  transition: max-height 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.todo-item-details.hidden {
+  max-height: 0;
+}
+
+.todo-item-details:not(.hidden) {
+  max-height: 500px;
+}
+
+.todo-item-left {
+  display: flex;
+  gap: 8px;
 }
 
 .todo-item-right {

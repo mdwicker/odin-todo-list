@@ -40,7 +40,13 @@ document.querySelectorAll("button.expand").forEach(
         const expanded = button.getAttribute("aria-expanded") === "true";
 
         button.setAttribute("aria-expanded", !expanded);
-        //   groupList.classList.toggle("hidden", expanded);
+        const card = button.closest('.todo-item');
+        const details = card.querySelector('.todo-item-details');
+
+        if (!details) return;
+
+        details.style.maxHeight = expanded ? "0px" : `${details.scrollHeight}px`;
+        details.classList.toggle("hidden", expanded);
     }));
 
 
