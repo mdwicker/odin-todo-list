@@ -34,6 +34,15 @@ todoController.addList({ title: "Work" });
 
 todoController.moveItem(2, 2);
 
+document.querySelectorAll("button.expand").forEach(
+    button => button.addEventListener("click", function (e) {
+        const button = e.target;
+        const expanded = button.getAttribute("aria-expanded") === "true";
+
+        button.setAttribute("aria-expanded", !expanded);
+        //   groupList.classList.toggle("hidden", expanded);
+    }));
+
 
 /*
 PLAN:

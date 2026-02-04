@@ -7,25 +7,71 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="page-title">Todo</div>
-        </header>
-        <div class="sidebar">
-            <!-- lists -->
-        </div>
-        <div class="main">
-            <div class="list-header">
-                <h1 class="list-name">Main</h1>
-                <div class="options">
+
+        <aside>
+            <div class="sitename">Todo App</div>
+
+            <ul class="nav-options">
+                <li id="show-all">Show all items</li>
+                <li>
+                    Filter by list:
+                    <ul class="todo-lists">
+                        <li>Main</li>
+                        <li>Work</li>
+                        <li>Home</li>
+                    </ul>
+                </li>
+            </ul>
+        </aside>
+        <main>
+            <header>
+                <div class="header-left">
+                    <h1 class="list-name">Main List</h1>
+                    <button id="add-item">Add Item</button>
+                </div>
+                <div class="header-right">
                     <div>filter</div>
                     <div>sort</div>
                 </div>
+            </header>
+            <div class="todo-items">
+                <!-- (div.todo-item>(label.todo-item-main>input:checkbox+span.todo-item-title{Todo Item $})+div.due-date+button.expand)*4 -->
+                <div class="todo-item">
+                    <label class="todo-item-main">
+                        <input type="checkbox" name="">
+                        <span class="todo-item-title">Todo Item 1</span>
+                    </label>
+                    <div class="todo-item-right">
+                        <div class="due-date">due Feb. 2</div>
+                        <button class="expand"></button>
+                    </div>
+                </div>
+                <div class="todo-item">
+                    <label class="todo-item-main">
+                        <input type="checkbox" name="">
+                        <span class="todo-item-title">Todo Item 2</span>
+                    </label>
+                    <div class="due-date"></div>
+                    <button class="expand"></button>
+                </div>
+                <div class="todo-item">
+                    <label class="todo-item-main">
+                        <input type="checkbox" name="">
+                        <span class="todo-item-title">Todo Item 3</span>
+                    </label>
+                    <div class="due-date"></div>
+                    <button class="expand"></button>
+                </div>
+                <div class="todo-item">
+                    <label class="todo-item-main">
+                        <input type="checkbox" name="">
+                        <span class="todo-item-title">Todo Item 4</span>
+                    </label>
+                    <div class="due-date"></div>
+                    <button class="expand"></button>
+                </div>
             </div>
-            <div class="todo-list">
-                <button>Add Item</button>
-                <!-- tasks -->
-            </div>
-        </div>
+        </main>
     </div>
 </body>
 </html>

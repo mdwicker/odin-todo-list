@@ -181,7 +181,7 @@ export const todoController = (function () {
     const items = {};
     const lists = {};
 
-    lists["1"] = new TodoList({ title: "Main", id: "1" });
+    lists["1"] = new TodoList({ title: "Main List", id: "1" });
 
     const getItem = function (id) {
         const item = items[String(id)];
