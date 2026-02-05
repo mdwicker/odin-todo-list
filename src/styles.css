@@ -75,16 +75,47 @@ header button {
   border-radius: 5px;
   border: 1px solid black;
   background-color: lightcyan;
+  display: flex;
+}
+
+.todo-item-left {
+  padding-top: 2px;
+  align-items: start;
+  width: 24px;
+}
+
+.todo-item-body {
+  width: 100%;
 }
 
 .todo-item-main {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.todo-item-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.due-date {
+  font-size: 0.85rem;
 }
 
 .todo-item-details {
   transition: max-height 0.3s ease-in-out;
   overflow: hidden;
+  max-height: 500px;
+  font-size: 0.9rem;
+}
+
+.todo-item-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  font-size: 0.85rem;
 }
 
 .todo-item-details.hidden {
@@ -95,14 +126,21 @@ header button {
   max-height: 500px;
 }
 
-.todo-item-left {
-  display: flex;
-  gap: 8px;
+.priority {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #333;
 }
 
-.todo-item-right {
-  display: flex;
-  gap: 8px;
+button.edit {
+  background: none;
+  border: none;
+  border: 1px solid black;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .nav-options {
@@ -118,6 +156,7 @@ button.expand {
   background: none;
   border: none;
   padding: 0;
+  margin-left: 8px;
   font: inherit;
   font-family: "Helvetica", "Arial", sans-serif;
   font-weight: bold;
