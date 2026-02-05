@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 
-function createTodoItemNode({ item } = {}) {
+export function createTodoItemNode({ item } = {}) {
     const itemNode = createNode({ classes: ["todo-item"] });
 
     const left = createNode({ classes: ["todo-item-left"] });
@@ -28,12 +28,14 @@ function createTodoItemNode({ item } = {}) {
     const bottom = createNode({ classes: ["todo-item-bottom"] });
     bottom.append(
         createNode({ classes: ["todo-item-priority"] }),
-        createNode({ type: "button", classes: ["edit"] })
+        createNode({ type: "button", classes: ["edit"], text: "Edit Item" })
     );
     details.append(bottom);
 
     body.append(main, details);
     itemNode.append(left, body);
+
+    expandButton.addEventListener("click", () => { toggleDetails(expandButton, details) })
 
     if (item) {
         return renderItemNode(itemNode, item);
@@ -84,4 +86,14 @@ function createNode({ type = "div", classes, id, text } = {}) {
 
 function formatDueDate(date) {
     return `due ${format(date, "MMM. d")}`;
+}
+
+function toggleDetails(expandButton, detailsNode) {
+    if (!expandButton || !detailsNode) return;
+
+    const expanded = expandButton.getAttribute("aria-expanded") === "true";
+    expandButton.setAttribute("aria-expanded", !expanded);
+
+    detailsNode.style.maxHeight = expanded ? "0px" : `${detailsNode.scrollHeight}px`;
+    detailsNode.classList.toggle("hidden", expanded);
 }

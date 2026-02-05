@@ -1,6 +1,10 @@
 import "./reset.css";
 import "./styles.css";
 import { todoController } from './todo.js'
+import { createTodoItemNode } from './dom.js'
+const today = new Date();
+const todoItem = createTodoItemNode({ item: { title: "To Do Item", dueDate: today, description: "Stuff to do", priority: 3 } });
+document.querySelector('.todo-items').append(todoItem);
 
 const fillerItems = [
     { title: "Laundry", description: "Wash and fold", dueDate: "2026-02-03", priority: 1 },
@@ -33,20 +37,6 @@ todoController.addList({ title: "Work" });
 
 todoController.moveItem(2, 2);
 
-document.querySelectorAll("button.expand").forEach(
-    button => button.addEventListener("click", function (e) {
-        const button = e.target;
-        const expanded = button.getAttribute("aria-expanded") === "true";
-
-        button.setAttribute("aria-expanded", !expanded);
-        const card = button.closest('.todo-item');
-        const details = card.querySelector('.todo-item-details');
-
-        if (!details) return;
-
-        details.style.maxHeight = expanded ? "0px" : `${details.scrollHeight}px`;
-        details.classList.toggle("hidden", expanded);
-    }));
 
 
 /*
