@@ -2,7 +2,6 @@ import "./reset.css";
 import "./styles.css";
 import { todoController } from './todo.js'
 
-
 const fillerItems = [
     { title: "Laundry", description: "Wash and fold", dueDate: "2026-02-03", priority: 1 },
     { title: "Grocery Shopping", description: "Eggs, milk, bread", dueDate: "2026-02-04", priority: 3 },
