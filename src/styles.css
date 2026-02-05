@@ -37,19 +37,8 @@ main {
 
 header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.header-right {
-  display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* =========================
@@ -100,7 +89,7 @@ header {
 
 .todo-item-main {
   display: flex;
-  align-items: center;
+  align-items: end;
   width: 100%;
 }
 
@@ -163,9 +152,6 @@ input[type="date"] {
   max-width: 150px;
 }
 
-button.save {
-  /* margin-left: auto; */
-}
 /* =========================
    Other Components
    ========================= */
@@ -178,10 +164,6 @@ button {
   font-size: var(--text-sm);
   background: none;
   cursor: pointer;
-}
-
-header button {
-  height: 30px;
 }
 
 button.expand {
@@ -199,10 +181,6 @@ button#add-item {
   border-width: 2px;
 }
 
-h1 {
-  font-size: var(--text-xl);
-}
-
 .sitename {
   margin-bottom: 32px;
   font-size: var(--text-lg);
@@ -214,12 +192,37 @@ h1 {
 }
 
 .nav-sublist {
-  padding-left: 12px;
-  font-size: var(--text-md);
+  padding-left: 16px;
 }
 
 .nav-link {
   cursor: pointer;
+}
+
+.nav-sublist-header {
+  font-style: italic;
+}
+
+.list-title {
+  font-size: var(--text-xl);
+}
+
+.view-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  padding-right: 4px;
+}
+
+.sort,
+.filter {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+select {
+  padding: 2px;
 }
 
 /* =========================

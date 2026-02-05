@@ -12,7 +12,7 @@
             <ul class="nav-list">
                 <li id="show-all" class="nav-link">Show all items</li>
                 <li>
-                    Filter by list:
+                    <span class="nav-sublist-header">Filter by list</span>
                     <ul class="nav-sublist">
                         <li class="nav-link">Main</li>
                         <li class="nav-link">Work</li>
@@ -23,13 +23,48 @@
         </aside>
         <main>
             <header>
-                <div class="header-left">
-                    <h1 class="list-name">Main List</h1>
-                    
-                </div>
-                <div class="header-right">
-                    <div>filter</div>
-                    <div>sort</div>
+                <h1 class="list-title">Main List</h1>
+                <div class="view-options">
+                    <div class="filter">
+                        <div>Filter by:</div>
+                        <select name="duedate-filter">
+                            <option value="" disabled selected>Due Date</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="week">Next 7 Days</option>
+                            <option value="month">Next 30 Days</option>
+                            <option value="nodate">No Due Date</option>
+                            <option value="all">All</option>
+                        </select>
+                        <select name="priority-filter">
+                            <option value="" disabled selected>Priority</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                    <div class="sort">
+                        <div class="view-control">
+                            <label for="sort-options">Sort by:</label>
+                            <select name="sort" id="sort-options">
+                                <option value="duedate">Due Date</option>
+                                <option value="priority">Priority</option>
+                            </select>
+                        </div>
+                        <div class="view-control">
+                            <label for="sort-order">Order:</label>
+                            <select name="sort" id="sort-order">
+                                <option value="descending">Descending</option>
+                                <option value="ascending">Ascending</option>
+                            </select>
+                        </div>
+                        
+                    </div>
                 </div>
             </header>
             <div class="todo-items">
@@ -37,7 +72,7 @@
                 <form class="todo-item hidden">
                     <div class="form-control">
                         <label for="new-item-title">Title</label>
-                        <input type="text" id="new=item-title">
+                        <input type="text" id="new-item-title">
                     </div>
                     <div class="form-control">
                         <label for="new-item-description">Description</label>
@@ -68,7 +103,7 @@
                         <div class="todo-item-main">
                             <div class="todo-item-title">Todo Item 1</div>
                             <div class="due-date">due Feb. 2</div>
-                            <button class="expand" aria-expanded="false"></button>
+                            <button class="expand" aria-label="toggle details" aria-expanded="false"></button>
                         </div>
                         <div class="todo-item-details hidden">
                             <div class="description">Info about what to do</div>
