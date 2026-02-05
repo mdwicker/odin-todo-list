@@ -28,7 +28,7 @@ export function createTodoItemNode({ item } = {}) {
     const bottom = createNode({ classes: ["todo-item-bottom"] });
     bottom.append(
         createNode({ classes: ["todo-item-priority"] }),
-        createNode({ type: "button", classes: ["edit"], text: "Edit Item" })
+        createNode({ type: "button", classes: ["edit"], text: "Edit" })
     );
     details.append(bottom);
 

@@ -8,17 +8,12 @@
 <body>
     <div class="container">
         <aside>
-            <div class="sitename">Todo App</div>
+            <!-- <div class="sitename">Todo App</div> -->
             <ul class="nav-list">
-                <li id="show-all" class="nav-link">Show all items</li>
-                <li>
-                    <span class="nav-sublist-header">Filter by list</span>
-                    <ul class="nav-sublist">
-                        <li class="nav-link">Main</li>
-                        <li class="nav-link">Work</li>
-                        <li class="nav-link">Home</li>
-                    </ul>
-                </li>
+                <li id="show-all" class="nav-link">All items</li>
+                <li class="nav-link">Main</li>
+                <li class="nav-link">Work</li>
+                <li class="nav-link">Home</li>
             </ul>
         </aside>
         <main>
@@ -26,7 +21,7 @@
                 <h1 class="list-title">Main List</h1>
                 <div class="view-options">
                     <div class="filter">
-                        <div>Filter by:</div>
+                        <div class="option-label">Filter by:</div>
                         <select name="duedate-filter">
                             <option value="" disabled selected>Due Date</option>
                             <option value="overdue">Overdue</option>
@@ -50,14 +45,14 @@
                     </div>
                     <div class="sort">
                         <div class="view-control">
-                            <label for="sort-options">Sort by:</label>
+                            <label class="option-label" for="sort-options">Sort by:</label>
                             <select name="sort" id="sort-options">
                                 <option value="duedate">Due Date</option>
                                 <option value="priority">Priority</option>
                             </select>
                         </div>
                         <div class="view-control">
-                            <label for="sort-order">Sort order:</label>
+                            <label class="option-label" for="sort-order">Sort order:</label>
                             <select name="sort" id="sort-order">
                                 <option value="descending">Descending</option>
                                 <option value="ascending">Ascending</option>
@@ -91,7 +86,7 @@
                         </div>
                         <div class="form-bottom-right">
                             <button class="cancel">Cancel</button>
-                            <button class="save">Save</button>
+                            <button class="save primary">Save</button>
                         </div>
                     </div>
                 </form>

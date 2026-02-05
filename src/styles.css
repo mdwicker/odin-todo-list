@@ -1,29 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap");
+
 :root {
-  --text-xl: 2rem; /* page / section titles */
-  --text-lg: 1.2rem; /* navigation, prominent labels */
-  --text-md: 1rem; /* primary content */
-  --text-sm: 0.9rem; /* secondary content */
-  --text-xs: 0.8rem; /* metadata, tags */
+  --text-xl: 2.3rem; /* page / section titles */
+  --text-lg: 1.3rem; /* navigation, prominent labels */
+  --text-md: 1.1rem; /* primary content */
+  --text-sm: 1rem; /* secondary content */
+  --text-xs: 0.9rem; /* metadata, tags */
+  --formal: "Cinzel", serif;
+  --rustic: "Lora", serif;
 }
 
 /* =========================
    General Layout
    ========================= */
 
+body {
+  background-color: #dcd6d0;
+  color: #181614;
+}
+
 .container {
   display: flex;
   max-width: 1000px;
   min-height: 100vh;
   margin: auto;
-  padding: 12px;
-  background-color: palegoldenrod;
+  border: 2px solid #46423b;
+  border-top: none;
+  border-bottom: none;
 }
 
 aside {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   padding: 20px;
   max-width: 200px;
-  background-color: antiquewhite;
+  background-color: #c7bfb4;
+  border-right: 1px solid #46423b;
 }
 
 main {
@@ -32,7 +46,7 @@ main {
   gap: 16px;
   flex: 3;
   padding: 20px;
-  background-color: paleturquoise;
+  background-color: #ded9d3;
 }
 
 header {
@@ -51,17 +65,16 @@ header {
   gap: 8px;
 }
 
-.nav-list,
-.nav-sublist {
+.nav-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  margin-top: 110px;
+  font-family: var(--formal);
+  text-transform: uppercase;
   padding-left: 0;
   list-style: none;
-}
-
-.nav-sublist {
-  margin-top: 4px;
+  font-size: var(--text-lg);
 }
 
 /* =========================
@@ -73,8 +86,9 @@ header {
   width: 100%;
   padding: 8px;
   border-radius: 5px;
-  border: 1px solid black;
-  background-color: lightcyan;
+  border: 1px solid #46423b;
+  font-family: var(--rustic);
+  background-color: #f5ede0;
 }
 
 .todo-item-left {
@@ -106,8 +120,10 @@ header {
 .todo-item-priority {
   padding: 2px 6px;
   border-radius: 4px;
+  font-family: var(--formal);
+  text-transform: uppercase;
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: 600;
   background-color: rgba(0, 0, 0, 0.08);
   color: #333;
 }
@@ -128,6 +144,15 @@ form.todo-item,
   flex-direction: column;
   gap: 8px;
   border-width: 2px;
+  text-transform: uppercase;
+}
+
+form input {
+  font-family: var(--rustic);
+}
+
+form label {
+  font-family: var(--formal);
 }
 
 .form-control {
@@ -142,7 +167,8 @@ form.todo-item,
 
 .form-bottom-right {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
+  align-items: end;
   justify-content: end;
   gap: 4px;
 }
@@ -157,53 +183,75 @@ input[type="date"] {
    ========================= */
 
 button {
-  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 35px;
+  padding: 4px 12px;
   border: none;
-  border: 1px solid black;
-  border-radius: 4px;
+
+  border-radius: 2px;
+  border: 2px solid #46423b;
+  background: #e6ded2;
+
+  font-family: var(--formal);
   font-size: var(--text-sm);
-  background: none;
+  font-weight: 500;
+  text-transform: uppercase;
+
   cursor: pointer;
 }
 
+button.save {
+  background: #725f3d;
+  border: 2px solid #4a3d27;
+  color: #f2ede5;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+button.cancel {
+  color: #181614d3;
+  border: 2px solid #2a2621b6;
+}
+
 button.expand {
+  height: 25px;
   border: none;
   padding: 0;
   margin-left: 8px;
   font-family: "Helvetica", "Arial", sans-serif;
   font-size: var(--text-xs);
   font-weight: bold;
+  background: none;
+  box-shadow: none;
 }
 
 button#add-item {
   height: auto;
   padding: 4px;
   border-width: 2px;
+  background: #5e7a4f;
+  border: 2px solid #3c5234;
+  color: #f1efe6;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 1);
 }
 
 .sitename {
   margin-bottom: 32px;
+  font-family: var(--formal);
   font-size: var(--text-lg);
   text-align: start;
-}
-
-.nav-list {
-  font-size: var(--text-lg);
-}
-
-.nav-sublist {
-  padding-left: 16px;
 }
 
 .nav-link {
   cursor: pointer;
 }
 
-.nav-sublist-header {
-  font-style: italic;
-}
-
 .list-title {
+  font-family: var(--formal);
   font-size: var(--text-xl);
 }
 
@@ -223,6 +271,12 @@ button#add-item {
 
 select {
   padding: 2px;
+  font-family: var(--rustic);
+  font-size: var(--text-sm);
+}
+
+.option-label {
+  text-transform: uppercase;
 }
 
 /* =========================
