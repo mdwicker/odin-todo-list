@@ -1,107 +1,187 @@
-import { format } from "date-fns";
+import { add, format } from "date-fns";
+import { pubSub, events } from "./pubSub.js";
 
-export function createTodoItemNode({ item } = {}) {
-    const itemNode = createNode({ classes: ["todo-item"] });
 
-    const left = createNode({ classes: ["todo-item-left"] });
-    const checkbox = createNode({ type: "input" });
-    checkbox.type = "checkbox";
-    checkbox.ariaLabel = "item completion toggle";
-    left.append(checkbox);
+export const createDomController = function (items, lists) {
+    addTodoItems(items)
+    setupNavList();
 
-    const body = createNode({ classes: ["todo-item-body"] });
-    const main = createNode({ classes: ["todo-item-main"] });
-
-    main.append(
-        createNode({ classes: ["todo-item-title"] }),
-        createNode({ classes: ["todo-item-duedate"] })
-    );
-
-    const expandButton = createNode({ type: "button", classes: ["expand"] });
-    expandButton.ariaLabel = "toggle details";
-    expandButton.ariaExpanded = "false";
-    main.append(expandButton);
-
-    const details = createNode({ classes: ["todo-item-details", "hidden"] });
-    details.append(createNode({ classes: ["todo-item-description"] }));
-
-    const bottom = createNode({ classes: ["todo-item-bottom"] });
-    bottom.append(
-        createNode({ classes: ["todo-item-priority"] }),
-        createNode({ type: "button", classes: ["edit"], text: "Edit" })
-    );
-    details.append(bottom);
-
-    body.append(main, details);
-    itemNode.append(left, body);
-
-    expandButton.addEventListener("click", () => { toggleDetails(expandButton, details) })
-
-    if (item) {
-        return renderItemNode(itemNode, item);
+    for (const list of lists) {
+        pubSub.publish(events.addList, list)
     }
-    return itemNode;
+
+    pubSub.publish(events.updateDisplayItems, { items });
+
+    const listTitleNode = document.querySelector(".list-title");
 }
 
-function renderItemNode(itemNode, item) {
-    const titleNode = itemNode.querySelector('.todo-item-title');
-    titleNode.textContent = item.title;
+const setupNavList = (() => {
+    const listNodes = {};
+    const navList = document.querySelector('.nav-list');
+    let currentList;
 
-    const dueDateNode = itemNode.querySelector('.todo-item-duedate');
-    dueDateNode.textContent = formatDueDate(item.dueDate);
+    const allItems = document.getElementById("all-items");
+    listNodes["all"] = allItems;
+    allItems.addEventListener("click", () => {
+        pubSub.publish(events.changeList, { id: "all" });
+    })
 
-    const descriptionNode = itemNode.querySelector('.todo-item-description');
-    descriptionNode.textContent = item.description ?? "";
+    pubSub.subscribe(events.setList, (list) => {
+        if (list.id !== currentList) {
+            listNodes[currentList].classList.remove("selected");
+            listNodes[list.id].classList.add("selected");
 
-    const priorityNode = itemNode.querySelector('.todo-item-priority');
-    priorityNode.textContent = `Priority ${item.priority}`;
+            currentList = list.id;
+        }
+    });
 
-    return itemNode;
+    pubSub.subscribe(events.addList, (list) => {
+        const listNode = createNode({ type: "li", class: "nav-link", text: list.title });
+        listNodes[list.id] = listNode;
+        navList.append(listNode);
+
+        listNode.addEventListener("click", () => {
+            pubSub.publish(events.changeList, { id: list.id });
+        });
+    });
+})()
+
+const setupTodoItems = (() => {
+    let itemNodes = {}
+    const container = document.querySelector('.todo-items');
+
+    pubSub.subscribe
+})
+
+function addTodoItems(items) {
+    for (const item of items) {
+        const itemNode = new TodoItemNode({ item: item });
+        itemsContainer.append(itemNode.node);
+        itemNodes[item.id] = itemNode;
+    }
 }
 
-function createNode({ type = "div", classes, id, text } = {}) {
-    const node = document.createElement(type);
-    if (classes) {
-        if (typeof classes === "string") return classes;
-        for (const className of classes) {
-            if (typeof (className) !== "string") {
-                throw new Error(`${className} needs to be a string to be added as a class name.`);
-            }
-            node.classList.add(className);
+
+// Todo Items
+
+export class TodoItemNode {
+    #title;
+    #description;
+    #duedate;
+    #priority;
+
+    #expandBtn;
+    #details;
+
+    #editBtn;
+    #checkbox;
+
+    constructor({ item = {} }) {
+        this.node = createNode({ classes: ["todo-item"] });
+        this.node.append(
+            this.#createLeft(),
+            this.#createBody()
+        );
+        this.#expandBtn.addEventListener("click", () => this.#toggleDetails());
+
+        if (item) {
+            this.render(item);
         }
     }
 
-    if (id) {
-        if (typeof (id) !== "string") {
-            throw new Error(`${id} needs to be a string to be added as an id.`);
-        }
-        node.id = id;
+    #createLeft() {
+        const left = createNode({ classes: ["todo-item-left"] });
+        this.#checkbox = createNode({ type: "input" });
+        this.#checkbox.type = "checkbox";
+        this.#checkbox.ariaLabel = "item completion toggle";
+        left.append(this.#checkbox);
+
+        return left;
     }
 
-    if (text) {
-        node.textContent = text;
+    #createBody() {
+        const body = createNode({ classes: ["todo-item-body"] });
+        this.#details = this.#createDetails();
+        body.append(
+            this.#createMain(),
+            this.#details
+        );
+
+        return body;
     }
 
-    return node;
+    #createMain() {
+        const main = createNode({ classes: ["todo-item-main"] });
+
+        this.#title = createNode({ classes: ["todo-item-title"] });
+        this.#duedate = createNode({ classes: ["todo-item-duedate"] });
+        this.#expandBtn = this.#createExpandButton();
+
+        main.append(
+            this.#title,
+            this.#duedate,
+            this.#expandBtn
+        );
+
+        return main;
+    }
+
+    #createDetails() {
+        const details = createNode({ classes: ["todo-item-details", "hidden"] });
+
+        this.#description = createNode({ classes: ["todo-item-description"] })
+        details.append(
+            this.#description,
+            this.#createBottom()
+        );
+
+        return details;
+    }
+
+    #createBottom() {
+        const bottom = createNode({ classes: ["todo-item-bottom"] });
+        this.#priority = createNode({ classes: ["todo-item-priority"] });
+        this.#editBtn = createNode({ type: "button", classes: ["edit"], text: "Edit" });
+        bottom.append(
+            this.#priority,
+            this.#editBtn
+        );
+
+        return bottom;
+    }
+
+    #createExpandButton() {
+        const expandButton = createNode({ type: "button", classes: ["expand"] });
+        expandButton.ariaLabel = "toggle details";
+        expandButton.ariaExpanded = "false";
+        return expandButton;
+    }
+
+    #toggleDetails() {
+        if (!this.#expandBtn || !this.#details) return;
+
+        const expanded = this.#expandBtn.getAttribute("aria-expanded") === "true";
+        this.#expandBtn.setAttribute("aria-expanded", !expanded);
+
+        this.#details.style.maxHeight = expanded ? "0px" : `${this.#details.scrollHeight}px`;
+        this.#details.classList.toggle("hidden", expanded);
+    }
+
+    render(item) {
+        this.#title.textContent = item.title;
+        this.#duedate.textContent = formatDueDate(item.dueDate);
+        this.#description.textContent = item.description ?? "";
+        this.#priority.textContent = `Priority ${item.priority}`;
+        this.#checkbox.checked = item.isComplete;
+    }
+
 }
 
-function formatDueDate(date) {
-    return `due ${format(date, "MMM. d")}`;
-}
-
-function toggleDetails(expandButton, detailsNode) {
-    if (!expandButton || !detailsNode) return;
-
-    const expanded = expandButton.getAttribute("aria-expanded") === "true";
-    expandButton.setAttribute("aria-expanded", !expanded);
-
-    detailsNode.style.maxHeight = expanded ? "0px" : `${detailsNode.scrollHeight}px`;
-    detailsNode.classList.toggle("hidden", expanded);
-}
 
 // Forms
 
-export class ItemDetailsForm {
+class ItemDetailsForm {
+
     constructor() {
         this.node = createNode({ type: "form", classes: ["todo-item"] });
         this.node.append(
@@ -131,11 +211,11 @@ export class ItemDetailsForm {
 
     #createFormBottomRight() {
         const rightNode = createNode({ classes: ["form-bottom-right"] })
-        rightNode.append(...this.createButtons());
+        rightNode.append(...this.#createButtons());
         return rightNode;
     }
 
-    createButtons() {
+    #createButtons() {
         return [this.#createCancelButton(), this.#createSaveButton()];
     }
 
@@ -193,46 +273,72 @@ export class ItemDetailsForm {
 
 }
 
-export class ItemEditForm extends ItemDetailsForm {
+export class EditItemForm extends ItemDetailsForm {
     constructor() {
         super();
+        this.node.querySelector('.form-bottom-right')
+            .prepend(this.#createDeleteButton());
     }
 
-    createButtons() {
-        const buttons = super.createButtons();
-        return [this.createDeleteButton(), ...buttons];
-    }
-
-    createDeleteButton() {
+    #createDeleteButton() {
         return createNode({ type: "button", classes: ["delete"], text: "Delete" });
     }
 }
 
+export class AddItemForm extends ItemDetailsForm {
+    constructor() {
+        super();
+    }
+}
 
 
-// <form class="todo-item ">
-//     <div class="form-control">
-//         <label for="new-item-title">Title</label>
-//         <input type="text" id="new-item-title">
-//     </div>
-//     <div class="form-control">
-//         <label for="new-item-description">Description</label>
-//         <input type="text" id="new-item-description">
-//     </div>
-//     <div class="form-bottom">
-//         <div class="form-bottom-left">
-//             <div class="form-control">
-//                 <label for="new-item-duedate">Due Date</label>
-//                 <input type="date" id="new-item-duedate">
-//             </div>
-//             <div class="form-control">
-//                 <label for="new-item-priority">Priority</label>
-//                 <input type="number" id="new-item-priority">
-//             </div>
-//         </div>
-//         <div class="form-bottom-right">
-//             <button class="cancel">Cancel</button>
-//             <button class="save primary">Save</button>
-//         </div>
-//     </div>
-// </form>
+// Utilities
+
+function createNode({ type = "div", classes, id, text } = {}) {
+    const node = document.createElement(type);
+    if (classes) {
+        if (typeof classes === "string") return classes;
+        for (const className of classes) {
+            if (typeof (className) !== "string") {
+                throw new Error(`${className} needs to be a string to be added as a class name.`);
+            }
+            node.classList.add(className);
+        }
+    }
+
+    if (id) {
+        if (typeof (id) !== "string") {
+            throw new Error(`${id} needs to be a string to be added as an id.`);
+        }
+        node.id = id;
+    }
+
+    if (text) {
+        node.textContent = text;
+    }
+
+    return node;
+}
+
+function formatDueDate(date) {
+    if (date.getFullYear() === new Date().getFullYear()) {
+        return `due ${format(date, "MMM. d")}`;
+    }
+    return `due ${format(date, "MMM. d, yyy")}`;
+}
+
+/*
+Ok so....where is the State owned? I guess it can be owned...uhhhhhh....
+here? in the dom? buuuuut state isn't really a DOM thing.
+soooooo in index.js? yeah, maybe. then somehow, the dom responds
+to changes in state. ohhhh yeah. Ok. Ohhhh maybe now we're cooking?
+I can have the state thing send out pings with changes in state,
+and all I have to do right now is wire in how things will
+respond to changes in state.
+
+k, so now that works with the list nav stuff.
+
+NOW how about items? the items live in the todo.js. When we need to display something,
+we get told what to display. So, the two things we might need to know are:
+refresh this particular item with this info, and refres the whole list with these items.
+*/

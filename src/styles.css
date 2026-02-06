@@ -283,6 +283,19 @@ select {
   text-transform: uppercase;
 }
 
+.nav-list #all-items {
+  border-bottom: 1px solid #181614;
+}
+
+.nav-link:hover {
+  font-weight: 500;
+}
+
+.nav-link.selected {
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(241, 239, 230, 0.6);
+}
+
 /* =========================
    States and Transitions
    ========================= */
