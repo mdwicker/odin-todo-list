@@ -114,6 +114,18 @@ export class TodoItem {
         return this.#isComplete;
     }
 
+    getData() {
+        return {
+            id: this.#id,
+            listId: this.listId,
+            title: this.title,
+            description: this.description,
+            dueDate: this.#dueDate,
+            priority: this.priority,
+            isComplete: this.#isComplete
+        }
+    }
+
     toJson() {
         return {
             id: this.#id,
@@ -181,14 +193,14 @@ export const todoController = (function () {
     const items = {};
     const lists = {};
 
-    lists["1"] = new TodoList({ title: "Main List", id: "1" });
+    lists["1"] = new TodoList({ title: "Main", id: "1" });
 
     const getItem = function (id) {
         const item = items[String(id)];
         if (!item) {
             throw new Error(`Item ${id} not found.`);
         }
-        return item;
+        return { listTitle: getList(item.listId).title, ...item.getData() };
     }
 
     const getList = function (id) {
@@ -200,7 +212,9 @@ export const todoController = (function () {
     }
 
     const getItems = function ({ listId, filter, sort } = {}) {
-        let itemsToGet = Object.values(items);
+        let itemsToGet = Object.values(items).map(item => {
+            return { listTitle: getList(item.listId).title, ...item.getData() }
+        });
 
         if (listId) {
             itemsToGet = itemsToGet.filter(item => item.listId === String(listId));
@@ -228,7 +242,8 @@ export const todoController = (function () {
     }
 
     const editItem = function (id, fieldsToEdit) {
-        const item = getItem(id)
+        const item = items[String(id)];
+        if (!item) return;
 
         const skipFields = new Set(["id", "listId", "isComplete"]);
 
@@ -255,7 +270,8 @@ export const todoController = (function () {
         if (!lists[String(targetListId)]) {
             throw new Error(`List ${targetListId} not found.`);
         }
-        const item = getItem(itemId);
+        const item = items[itemId];
+        if (!item) return;
         item.listId = String(targetListId);
     }
 

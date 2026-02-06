@@ -103,12 +103,33 @@ header {
 
 .todo-item-main {
   display: flex;
-  align-items: end;
+  justify-content: space-between;
   width: 100%;
 }
 
+.todo-item-main-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.todo-item-main-right {
+  display: flex;
+  align-items: end;
+}
+
+.todo-item-list {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--formal);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #333;
+}
+
 .todo-item-title {
-  flex: 1;
   font-size: var(--text-md);
   font-weight: 600;
 }
@@ -192,7 +213,7 @@ button {
   border: none;
 
   border-radius: 2px;
-  border: 2px solid #46423b;
+  border: 1px solid rgba(24, 22, 20, 0.5);
   background: #e6ded2;
 
   font-family: var(--formal);
@@ -267,10 +288,14 @@ button.save {
 }
 
 .sort,
-.filter {
+.filter-options {
   display: flex;
-  align-items: end;
   gap: 8px;
+}
+
+.view-control {
+  display: flex;
+  flex-direction: column;
 }
 
 select {

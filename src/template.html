@@ -14,41 +14,49 @@
         </aside>
         <main>
             <header>
-                <h1 class="list-title">Main List</h1>
+                <h1 class="list-title"></h1>
                 <div class="view-options">
                     <div class="filter">
-                        <div class="option-label">Filter by:</div>
-                        <select name="duedate-filter">
-                            <option value="" disabled selected>Due Date</option>
-                            <option value="overdue">Overdue</option>
-                            <option value="today">Today</option>
-                            <option value="tomorrow">Tomorrow</option>
-                            <option value="week">Next 7 Days</option>
-                            <option value="month">Next 30 Days</option>
-                            <option value="nodate">No Due Date</option>
-                            <option value="all">All</option>
-                        </select>
-                        <select name="priority-filter">
-                            <option value="" disabled selected>Priority</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="all">All</option>
-                        </select>
+                        <div class="option-label">Filter by</div>
+                        <div class="filter-options">
+                            <select name="duedate-filter">
+                                <option value="" disabled selected>Due Date</option>
+                                <option value="overdue">Overdue</option>
+                                <option value="today">Today</option>
+                                <option value="tomorrow">Tomorrow</option>
+                                <option value="week">Next 7 Days</option>
+                                <option value="month">Next 30 Days</option>
+                                <option value="nodate">No Due Date</option>
+                                <option value="all">All</option>
+                            </select>
+                            <select name="priority-filter">
+                                <option value="" disabled selected>Priority</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="all">All</option>
+                            </select>
+                            <select name="completion-filter">
+                                <option value="" disabled selected>Completion</option>
+                                <option value="overdue">Complete</option>
+                                <option value="today">Incomplete</option>
+                                <option value="all">All</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="sort">
                         <div class="view-control">
-                            <label class="option-label" for="sort-options">Sort by:</label>
+                            <label class="option-label" for="sort-options">Sort by</label>
                             <select name="sort" id="sort-options">
                                 <option value="duedate">Due Date</option>
                                 <option value="priority">Priority</option>
                             </select>
                         </div>
                         <div class="view-control">
-                            <label class="option-label" for="sort-order">Sort order:</label>
+                            <label class="option-label" for="sort-order">Sort order</label>
                             <select name="sort" id="sort-order">
                                 <option value="descending">Descending</option>
                                 <option value="ascending">Ascending</option>

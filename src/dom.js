@@ -2,22 +2,19 @@ import { add, format } from "date-fns";
 import { pubSub, events } from "./pubSub.js";
 
 
-export const createDomController = function (items, lists) {
-    addTodoItems(items)
+export const createDomController = function (lists) {
+    setupTodoItems();
     setupNavList();
 
     for (const list of lists) {
         pubSub.publish(events.addList, list)
     }
-
-    pubSub.publish(events.updateDisplayItems, { items });
-
-    const listTitleNode = document.querySelector(".list-title");
 }
 
-const setupNavList = (() => {
+function setupNavList() {
     const listNodes = {};
     const navList = document.querySelector('.nav-list');
+    const listTitleNode = document.querySelector('.list-title');
     let currentList;
 
     const allItems = document.getElementById("all-items");
@@ -27,16 +24,19 @@ const setupNavList = (() => {
     })
 
     pubSub.subscribe(events.setList, (list) => {
-        if (list.id !== currentList) {
+        if (!currentList) {
+            listNodes[list.id].classList.add("selected");
+            currentList = list.id;
+        } else if (list.id !== currentList) {
             listNodes[currentList].classList.remove("selected");
             listNodes[list.id].classList.add("selected");
-
             currentList = list.id;
         }
+        listTitleNode.textContent = list.title;
     });
 
     pubSub.subscribe(events.addList, (list) => {
-        const listNode = createNode({ type: "li", class: "nav-link", text: list.title });
+        const listNode = createNode({ type: "li", classes: ["nav-link"], text: list.title });
         listNodes[list.id] = listNode;
         navList.append(listNode);
 
@@ -44,21 +44,34 @@ const setupNavList = (() => {
             pubSub.publish(events.changeList, { id: list.id });
         });
     });
-})()
+}
 
-const setupTodoItems = (() => {
+function setupTodoItems() {
     let itemNodes = {}
     const container = document.querySelector('.todo-items');
 
-    pubSub.subscribe
-})
+    pubSub.subscribe(events.updateDisplayItems, (items) => {
+        // clear  items from cache
+        itemNodes = {};
 
-function addTodoItems(items) {
-    for (const item of items) {
-        const itemNode = new TodoItemNode({ item: item });
-        itemsContainer.append(itemNode.node);
-        itemNodes[item.id] = itemNode;
-    }
+        // clear current items from DOM
+        while (container.lastElementChild
+            && container.lastElementChild.tagName !== "BUTTON") {
+            container.removeChild(container.lastElementChild);
+        }
+
+        // add new items
+        for (const item of items) {
+            const itemNode = new TodoItemNode({ item });
+            itemNodes[item.id] = itemNode;
+            container.append(itemNode.node);
+        }
+    });
+
+    pubSub.subscribe(events.updateItem, (item) => {
+        if (!(item.id in itemNodes)) return;
+        itemNodes[item.id].render(item);
+    })
 }
 
 
@@ -69,12 +82,13 @@ export class TodoItemNode {
     #description;
     #duedate;
     #priority;
+    #list;
 
     #expandBtn;
     #details;
 
-    #editBtn;
-    #checkbox;
+    editBtn;
+    checkbox;
 
     constructor({ item = {} }) {
         this.node = createNode({ classes: ["todo-item"] });
@@ -91,10 +105,10 @@ export class TodoItemNode {
 
     #createLeft() {
         const left = createNode({ classes: ["todo-item-left"] });
-        this.#checkbox = createNode({ type: "input" });
-        this.#checkbox.type = "checkbox";
-        this.#checkbox.ariaLabel = "item completion toggle";
-        left.append(this.#checkbox);
+        this.checkbox = createNode({ type: "input" });
+        this.checkbox.type = "checkbox";
+        this.checkbox.ariaLabel = "item completion toggle";
+        left.append(this.checkbox);
 
         return left;
     }
@@ -111,17 +125,24 @@ export class TodoItemNode {
     }
 
     #createMain() {
-        const main = createNode({ classes: ["todo-item-main"] });
-
+        const mainLeft = createNode({ classes: ["todo-item-main-left"] });
         this.#title = createNode({ classes: ["todo-item-title"] });
+        this.#list = createNode({ classes: ["todo-item-list"] });
+        mainLeft.append(
+            this.#title,
+            this.#list
+        );
+
+        const mainRight = createNode({ classes: ["todo-item-main-right"] });
         this.#duedate = createNode({ classes: ["todo-item-duedate"] });
         this.#expandBtn = this.#createExpandButton();
-
-        main.append(
-            this.#title,
+        mainRight.append(
             this.#duedate,
             this.#expandBtn
-        );
+        )
+
+        const main = createNode({ classes: ["todo-item-main"] });
+        main.append(mainLeft, mainRight);
 
         return main;
     }
@@ -141,10 +162,10 @@ export class TodoItemNode {
     #createBottom() {
         const bottom = createNode({ classes: ["todo-item-bottom"] });
         this.#priority = createNode({ classes: ["todo-item-priority"] });
-        this.#editBtn = createNode({ type: "button", classes: ["edit"], text: "Edit" });
+        this.editBtn = createNode({ type: "button", classes: ["edit"], text: "Edit" });
         bottom.append(
             this.#priority,
-            this.#editBtn
+            this.editBtn
         );
 
         return bottom;
@@ -168,13 +189,16 @@ export class TodoItemNode {
     }
 
     render(item) {
+        if (!item) {
+            throw new Error("Item not given.");
+        }
         this.#title.textContent = item.title;
+        this.#list.textContent = item.listTitle;
         this.#duedate.textContent = formatDueDate(item.dueDate);
         this.#description.textContent = item.description ?? "";
         this.#priority.textContent = `Priority ${item.priority}`;
-        this.#checkbox.checked = item.isComplete;
+        this.checkbox.checked = item.isComplete;
     }
-
 }
 
 
@@ -297,12 +321,15 @@ export class AddItemForm extends ItemDetailsForm {
 function createNode({ type = "div", classes, id, text } = {}) {
     const node = document.createElement(type);
     if (classes) {
-        if (typeof classes === "string") return classes;
-        for (const className of classes) {
-            if (typeof (className) !== "string") {
-                throw new Error(`${className} needs to be a string to be added as a class name.`);
+        if (typeof classes === "string") {
+            node.classList.add(classes);
+        } else {
+            for (const className of classes) {
+                if (typeof (className) !== "string") {
+                    throw new Error(`${className} needs to be a string to be added as a class name.`);
+                }
+                node.classList.add(className);
             }
-            node.classList.add(className);
         }
     }
 
@@ -316,29 +343,13 @@ function createNode({ type = "div", classes, id, text } = {}) {
     if (text) {
         node.textContent = text;
     }
-
     return node;
 }
 
 function formatDueDate(date) {
+    date = new Date(date);
     if (date.getFullYear() === new Date().getFullYear()) {
         return `due ${format(date, "MMM. d")}`;
     }
     return `due ${format(date, "MMM. d, yyy")}`;
 }
-
-/*
-Ok so....where is the State owned? I guess it can be owned...uhhhhhh....
-here? in the dom? buuuuut state isn't really a DOM thing.
-soooooo in index.js? yeah, maybe. then somehow, the dom responds
-to changes in state. ohhhh yeah. Ok. Ohhhh maybe now we're cooking?
-I can have the state thing send out pings with changes in state,
-and all I have to do right now is wire in how things will
-respond to changes in state.
-
-k, so now that works with the list nav stuff.
-
-NOW how about items? the items live in the todo.js. When we need to display something,
-we get told what to display. So, the two things we might need to know are:
-refresh this particular item with this info, and refres the whole list with these items.
-*/
