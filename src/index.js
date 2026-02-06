@@ -1,10 +1,14 @@
 import "./reset.css";
 import "./styles.css";
 import { todoController } from './todo.js'
-import { createTodoItemNode } from './dom.js'
+import { createTodoItemNode, ItemDetailsForm, ItemEditForm } from './dom.js'
+
 const today = new Date();
 const todoItem = createTodoItemNode({ item: { title: "To Do Item", dueDate: today, description: "Stuff to do", priority: 3 } });
 document.querySelector('.todo-items').append(todoItem);
+
+const editItemForm = new ItemEditForm();
+document.getElementById("add-item").replaceWith(editItemForm.node);
 
 const fillerItems = [
     { title: "Laundry", description: "Wash and fold", dueDate: "2026-02-03", priority: 1 },

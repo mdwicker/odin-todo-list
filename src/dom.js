@@ -62,6 +62,7 @@ function renderItemNode(itemNode, item) {
 function createNode({ type = "div", classes, id, text } = {}) {
     const node = document.createElement(type);
     if (classes) {
+        if (typeof classes === "string") return classes;
         for (const className of classes) {
             if (typeof (className) !== "string") {
                 throw new Error(`${className} needs to be a string to be added as a class name.`);
@@ -97,3 +98,141 @@ function toggleDetails(expandButton, detailsNode) {
     detailsNode.style.maxHeight = expanded ? "0px" : `${detailsNode.scrollHeight}px`;
     detailsNode.classList.toggle("hidden", expanded);
 }
+
+// Forms
+
+export class ItemDetailsForm {
+    constructor() {
+        this.node = createNode({ type: "form", classes: ["todo-item"] });
+        this.node.append(
+            this.#createTitleInput(),
+            this.#createDescriptionInput(),
+            this.#createFormBottom()
+        );
+    }
+
+    #createFormBottom() {
+        const bottomNode = createNode({ classes: ["form-bottom"] })
+        bottomNode.append(
+            this.#createFormBottomLeft(),
+            this.#createFormBottomRight()
+        );
+        return bottomNode;
+    }
+
+    #createFormBottomLeft() {
+        const leftNode = createNode({ classes: ["form-bottom-left"] })
+        leftNode.append(
+            this.#createDuedateInput(),
+            this.#createPriorityInput()
+        );
+        return leftNode;
+    }
+
+    #createFormBottomRight() {
+        const rightNode = createNode({ classes: ["form-bottom-right"] })
+        rightNode.append(...this.createButtons());
+        return rightNode;
+    }
+
+    createButtons() {
+        return [this.#createCancelButton(), this.#createSaveButton()];
+    }
+
+    #createTitleInput() {
+        const label = createNode({ type: "label", text: "Title" });
+        label.for = "new-item-title";
+        const input = createNode({ type: "input", id: "new-item-title" });
+        input.type = "text";
+
+        const titleNode = createNode({ classes: ["form-control"] });
+        titleNode.append(label, input);
+        return titleNode;
+    }
+
+    #createDescriptionInput() {
+        const label = createNode({ type: "label", text: "Description" });
+        label.for = "new-item-description";
+        const input = createNode({ type: "input", id: "new-item-description" });
+        input.type = "text";
+
+        const descriptionNode = createNode({ classes: ["form-control"] })
+        descriptionNode.append(label, input);
+        return descriptionNode;
+    }
+
+    #createDuedateInput() {
+        const label = createNode({ type: "label", text: "Due Date" });
+        label.for = "new-item-duedate";
+        const input = createNode({ type: "input", id: "new-item-duedate" });
+        input.type = "date";
+
+        const duedateNode = createNode({ classes: ["form-control"] })
+        duedateNode.append(label, input);
+        return duedateNode;
+    }
+
+    #createPriorityInput() {
+        const label = createNode({ type: "label", text: "Priority" });
+        label.for = "new-item-priority";
+        const input = createNode({ type: "input", id: "new-item-priority" });
+        input.type = "number";
+
+        const priorityNode = createNode({ classes: ["form-control"] })
+        priorityNode.append(label, input);
+        return priorityNode;
+    }
+
+    #createCancelButton() {
+        return createNode({ type: "button", classes: ["cancel"], text: "Cancel" });
+    }
+
+    #createSaveButton() {
+        return createNode({ type: "button", classes: ["save"], text: "Save" });
+    }
+
+}
+
+export class ItemEditForm extends ItemDetailsForm {
+    constructor() {
+        super();
+    }
+
+    createButtons() {
+        const buttons = super.createButtons();
+        return [this.createDeleteButton(), ...buttons];
+    }
+
+    createDeleteButton() {
+        return createNode({ type: "button", classes: ["delete"], text: "Delete" });
+    }
+}
+
+
+
+// <form class="todo-item ">
+//     <div class="form-control">
+//         <label for="new-item-title">Title</label>
+//         <input type="text" id="new-item-title">
+//     </div>
+//     <div class="form-control">
+//         <label for="new-item-description">Description</label>
+//         <input type="text" id="new-item-description">
+//     </div>
+//     <div class="form-bottom">
+//         <div class="form-bottom-left">
+//             <div class="form-control">
+//                 <label for="new-item-duedate">Due Date</label>
+//                 <input type="date" id="new-item-duedate">
+//             </div>
+//             <div class="form-control">
+//                 <label for="new-item-priority">Priority</label>
+//                 <input type="number" id="new-item-priority">
+//             </div>
+//         </div>
+//         <div class="form-bottom-right">
+//             <button class="cancel">Cancel</button>
+//             <button class="save primary">Save</button>
+//         </div>
+//     </div>
+// </form>

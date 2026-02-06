@@ -179,7 +179,7 @@ input[type="date"] {
 }
 
 /* =========================
-   Other Components
+   Buttons
    ========================= */
 
 button {
@@ -203,18 +203,17 @@ button {
   cursor: pointer;
 }
 
-button.save {
+button.cancel {
   background: #725f3d;
   border: 2px solid #4a3d27;
   color: #f2ede5;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.6),
-    0 0 2px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
-button.cancel {
-  color: #181614d3;
-  border: 2px solid #2a2621b6;
+button.delete {
+  border: 2px solid #331815;
+  background-color: #5b2a26;
+  color: #f2ede5;
 }
 
 button.expand {
@@ -229,15 +228,20 @@ button.expand {
   box-shadow: none;
 }
 
-button#add-item {
+button#add-item,
+button.save {
   height: auto;
-  padding: 4px;
+  padding: 4px 12px;
   border-width: 2px;
   background: #5e7a4f;
   border: 2px solid #3c5234;
   color: #f1efe6;
   text-shadow: 0 0 2px rgba(0, 0, 0, 1);
 }
+
+/* =========================
+   Other Components
+   ========================= */
 
 .sitename {
   margin-bottom: 32px;
@@ -283,13 +287,18 @@ select {
    States and Transitions
    ========================= */
 
+.hidden {
+  display: none;
+}
+
 .todo-item-details {
   max-height: 500px;
   overflow: hidden;
   transition: max-height 0.3s ease-in-out;
 }
 
-.todo-item-details.hidden {
+.todo-item .todo-item-details.hidden {
+  display: block;
   max-height: 0;
 }
 
