@@ -1,65 +1,27 @@
-import { add, format } from "date-fns";
+import { format } from "date-fns";
 import { pubSub, events } from "./pubSub.js";
 
 
 export const createDomController = function (lists) {
-    setupTodoItems();
-    setupNavList();
+    const itemNodes = {};
+    const listNodes = {};
+
+    const container = document.querySelector('.todo-items');
+    const navList = document.querySelector('.nav-list');
+    const listHeader = document.querySelector('.list-title');
+
+    updateLists(lists);
     setupAddItemForm(lists);
 
     for (const list of lists) {
         pubSub.publish(events.addList, list)
     }
-}
 
-function setupNavList() {
-    const listNodes = {};
-    const navList = document.querySelector('.nav-list');
-    const listTitleNode = document.querySelector('.list-title');
-    let currentList;
-
-    const allItems = document.getElementById("all-items");
-    listNodes["all"] = allItems;
-    allItems.addEventListener("click", () => {
-        pubSub.publish(events.changeList, { id: "all" });
-    })
-
-    pubSub.subscribe(events.setList, (list) => {
-        if (!currentList) {
-            listNodes[list.id].classList.add("selected");
-            currentList = list.id;
-        } else if (list.id !== currentList) {
-            listNodes[currentList].classList.remove("selected");
-            listNodes[list.id].classList.add("selected");
-            currentList = list.id;
-        }
-        listTitleNode.textContent = list.title;
-    });
-
-    pubSub.subscribe(events.addList, (list) => {
-        const listNode = createNode({ type: "li", classes: ["nav-link"], text: list.title });
-        listNodes[list.id] = listNode;
-        navList.append(listNode);
-
-        listNode.addEventListener("click", () => {
-            pubSub.publish(events.changeList, { id: list.id });
-        });
-    });
-}
-
-function setupTodoItems() {
-    let itemNodes = {}
-    const container = document.querySelector('.todo-items');
-
-    pubSub.subscribe(events.updateDisplayItems, (items) => {
-        // clear  items from cache
-        itemNodes = {};
-
-        // clear current items from DOM
-        while (container.lastElementChild
-            && container.lastElementChild.tagName !== "BUTTON"
-            && container.lastElementChild.tagName !== "FORM") {
-            container.removeChild(container.lastElementChild);
+    const displayItems = function (items) {
+        // Clear displayed items
+        for (const [id, item] of Object.entries(itemNodes)) {
+            item.node.remove();
+            delete itemNodes[id];
         }
 
         // add new items
@@ -68,13 +30,61 @@ function setupTodoItems() {
             itemNodes[item.id] = itemNode;
             container.append(itemNode.node);
         }
-    });
+    };
 
-    pubSub.subscribe(events.updateItem, (item) => {
-        if (!(item.id in itemNodes)) return;
-        itemNodes[item.id].render(item);
-    });
+    const removeItem = function (id) {
+        if (id in itemNodes) {
+            itemNodes[id].node.remove();
+            delete itemNodes[id];
+        } else {
+            console.log(`Could not find item ${id} to delete.`);
+        }
+    };
+
+    const updateItem = function (item) {
+        if (item.id in itemNodes) {
+            itemNodes[item.id].render(item);
+        } else {
+            console.log(`Could not find item ${item.id} to render`);
+        }
+    };
+
+    const updateLists = function (lists) {
+        for (const [id, node] of Object.entries(listNodes)) {
+            node.remove();
+            delete listNodes[id];
+        }
+
+        for (const list of lists) {
+            const listNode = createNode({
+                type: "li",
+                classes: ["nav-link"],
+                text: list.title
+            });
+
+            listNodes[list.id] = listNode;
+            navList.append(listNode);
+
+            listNode.addEventListener("click", () => {
+                pubSub.publish(events.changeList, { id: list.id });
+            });
+        }
+    }
+
+    const updateSelectedList = function (selected) {
+        for (const [id, node] of Object.entries(listNodes)) {
+            node.classList.toggle("selected", id == selected.id);
+        }
+
+        listHeader.textContent = selected.title;
+    }
+
+    return {
+        displayItems, removeItem, updateItem,
+        updateLists, updateSelectedList
+    }
 }
+
 
 function setupAddItemForm(lists) {
     const addItemBtn = document.getElementById("add-item");
@@ -101,24 +111,13 @@ function setupAddItemForm(lists) {
         formNode.classList.add("hidden");
         addItemBtn.classList.remove("hidden");
     })
-
-    // addItemForm.cancelBtn.addEventListener("click", () => {
-
-    // process results
-    // pubSub.publish(events.formSave, { data: new FormData(addItemForm) });
-    // reset and hide
-
-    // addItemForm.reset();
-
-    // addItemForm.classList.add("hidden");
-    // button.classList.add("hidden");
-    // })
 }
 
 
 // Todo Items
 
 export class TodoItemNode {
+    #checkbox;
     #title;
     #description;
     #duedate;
@@ -129,7 +128,7 @@ export class TodoItemNode {
     #details;
 
     editBtn;
-    checkbox;
+
 
     constructor({ item = {} }) {
         this.node = createNode({ classes: ["todo-item"] });
@@ -137,19 +136,21 @@ export class TodoItemNode {
             this.#createLeft(),
             this.#createBody()
         );
-        this.#expandBtn.addEventListener("click", () => this.#toggleDetails());
 
         if (item) {
             this.render(item);
+            this.#checkbox.addEventListener("change", () => {
+                pubSub.publish(events.itemChecked, { id: item.id, checked: this.node.checked });
+            })
         }
+
+        this.#expandBtn.addEventListener("click", () => this.#toggleDetails());
     }
 
     #createLeft() {
         const left = createNode({ classes: ["todo-item-left"] });
-        this.checkbox = createNode({ type: "input" });
-        this.checkbox.type = "checkbox";
-        this.checkbox.ariaLabel = "item completion toggle";
-        left.append(this.checkbox);
+        const checkbox = this.#createCheckbox();
+        left.append(checkbox);
 
         return left;
     }
@@ -217,6 +218,12 @@ export class TodoItemNode {
         expandButton.ariaLabel = "toggle details";
         expandButton.ariaExpanded = "false";
         return expandButton;
+    }
+
+    #createCheckbox() {
+        this.#checkbox = createNode({ type: "input" });
+        this.#checkbox.type = "checkbox";
+        this.#checkbox.ariaLabel = "item completion toggle";
     }
 
     #toggleDetails() {
