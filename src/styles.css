@@ -199,6 +199,10 @@ input[type="date"] {
   max-width: 150px;
 }
 
+form.hidden {
+  display: none;
+}
+
 /* =========================
    Buttons
    ========================= */

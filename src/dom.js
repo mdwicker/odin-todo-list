@@ -5,6 +5,7 @@ import { pubSub, events } from "./pubSub.js";
 export const createDomController = function (lists) {
     setupTodoItems();
     setupNavList();
+    setupAddItemForm(lists);
 
     for (const list of lists) {
         pubSub.publish(events.addList, list)
@@ -56,7 +57,8 @@ function setupTodoItems() {
 
         // clear current items from DOM
         while (container.lastElementChild
-            && container.lastElementChild.tagName !== "BUTTON") {
+            && container.lastElementChild.tagName !== "BUTTON"
+            && container.lastElementChild.tagName !== "FORM") {
             container.removeChild(container.lastElementChild);
         }
 
@@ -71,7 +73,46 @@ function setupTodoItems() {
     pubSub.subscribe(events.updateItem, (item) => {
         if (!(item.id in itemNodes)) return;
         itemNodes[item.id].render(item);
+    });
+}
+
+function setupAddItemForm(lists) {
+    const addItemBtn = document.getElementById("add-item");
+    const addItemForm = new ItemDetailsForm({
+        lists, item: {
+            id: 5, title: "New", description: "Hi there", listId: 2, priority: 5, dueDate: new Date()
+        }
+    });
+
+    // initialize hidden form
+    const formNode = addItemForm.node;
+    formNode.classList.add("hidden");
+    addItemBtn.after(formNode);
+
+
+    // replace button with form on button click
+    addItemBtn.addEventListener("click", () => {
+        formNode.classList.remove("hidden");
+        addItemBtn.classList.add("hidden");
+    });
+
+    // replace form with button on submit
+    formNode.addEventListener("submit", () => {
+        formNode.classList.add("hidden");
+        addItemBtn.classList.remove("hidden");
     })
+
+    // addItemForm.cancelBtn.addEventListener("click", () => {
+
+    // process results
+    // pubSub.publish(events.formSave, { data: new FormData(addItemForm) });
+    // reset and hide
+
+    // addItemForm.reset();
+
+    // addItemForm.classList.add("hidden");
+    // button.classList.add("hidden");
+    // })
 }
 
 
@@ -202,21 +243,41 @@ export class TodoItemNode {
 }
 
 
-// Forms
+// Item Details Form
 
-class ItemDetailsForm {
+export class ItemDetailsForm {
+    #item;
 
-    constructor() {
+    constructor({ item, lists } = {}) {
+        this.#item = item;
+
+        this.lists = lists;
         this.node = createNode({ type: "form", classes: ["todo-item"] });
         this.node.append(
             this.#createTitleInput(),
+            this.#createListInput(),
             this.#createDescriptionInput(),
             this.#createFormBottom()
         );
+
+        this.node.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const submitBtn = e.submitter.value;
+
+            if (submitBtn === "save") {
+                this.#save();
+            } else if (submitBtn === "cancel") {
+                this.#cancel();
+            } else if (submitBtn === "delete") {
+                this.#delete();
+            }
+
+            this.node.reset();
+        })
     }
 
     #createFormBottom() {
-        const bottomNode = createNode({ classes: ["form-bottom"] })
+        const bottomNode = createNode({ classes: ["form-bottom"] });
         bottomNode.append(
             this.#createFormBottomLeft(),
             this.#createFormBottomRight()
@@ -240,25 +301,68 @@ class ItemDetailsForm {
     }
 
     #createButtons() {
-        return [this.#createCancelButton(), this.#createSaveButton()];
+        const buttons = [];
+        if (this.#item) buttons.push(this.#createDeleteButton());
+        buttons.push(
+            this.#createCancelButton(),
+            this.#createSaveButton()
+        );
+        return buttons;
     }
 
     #createTitleInput() {
         const label = createNode({ type: "label", text: "Title" });
         label.for = "new-item-title";
         const input = createNode({ type: "input", id: "new-item-title" });
+        input.name = "title";
         input.type = "text";
+        if (this.#item) input.value = this.#item.title;
 
         const titleNode = createNode({ classes: ["form-control"] });
         titleNode.append(label, input);
         return titleNode;
     }
 
+    #createListInput() {
+        const label = createNode({ type: "label", text: "List" });
+        label.for = "new-item-list";
+        const input = createNode({ type: "select", id: "new-item-list" });
+        input.name = "list";
+
+        for (const list of this.lists) {
+            const option = createNode({ type: "option", text: list.title });
+            option.value = list.id;
+            input.append(option);
+            if (this.#item && list.id === String(this.#item.listId)) {
+                option.selected = true;
+            }
+        }
+
+        // Update visible lists when lists are changed
+        pubSub.subscribe(events.updateLists, (lists) => {
+            while (input.lastElementChild) {
+                input.removeChild(input.lastElementChild);
+            }
+
+            for (const list of this.lists) {
+                const option = createNode({ type: "option", text: list.title });
+                option.value = list.id;
+                input.append(option);
+            }
+        });
+
+        const listNode = createNode({ classes: ["form-control"] });
+        listNode.append(label, input);
+        return listNode;
+    }
+
     #createDescriptionInput() {
         const label = createNode({ type: "label", text: "Description" });
         label.for = "new-item-description";
         const input = createNode({ type: "input", id: "new-item-description" });
+        input.name = "description";
         input.type = "text";
+        if (this.#item) input.value = this.#item.description;
 
         const descriptionNode = createNode({ classes: ["form-control"] })
         descriptionNode.append(label, input);
@@ -269,7 +373,9 @@ class ItemDetailsForm {
         const label = createNode({ type: "label", text: "Due Date" });
         label.for = "new-item-duedate";
         const input = createNode({ type: "input", id: "new-item-duedate" });
+        input.name = "duedate";
         input.type = "date";
+        if (this.#item) input.value = format(this.#item.dueDate, "yyyy-MM-dd");
 
         const duedateNode = createNode({ classes: ["form-control"] })
         duedateNode.append(label, input);
@@ -280,7 +386,9 @@ class ItemDetailsForm {
         const label = createNode({ type: "label", text: "Priority" });
         label.for = "new-item-priority";
         const input = createNode({ type: "input", id: "new-item-priority" });
+        input.name = "priority";
         input.type = "number";
+        if (this.#item) input.value = this.#item.priority;
 
         const priorityNode = createNode({ classes: ["form-control"] })
         priorityNode.append(label, input);
@@ -288,30 +396,46 @@ class ItemDetailsForm {
     }
 
     #createCancelButton() {
-        return createNode({ type: "button", classes: ["cancel"], text: "Cancel" });
+        const cancelBtn = createNode({ type: "button", classes: ["cancel"], text: "Cancel" });
+        cancelBtn.value = "cancel";
+        return cancelBtn;
     }
 
     #createSaveButton() {
-        return createNode({ type: "button", classes: ["save"], text: "Save" });
-    }
-
-}
-
-export class EditItemForm extends ItemDetailsForm {
-    constructor() {
-        super();
-        this.node.querySelector('.form-bottom-right')
-            .prepend(this.#createDeleteButton());
+        const saveBtn = createNode({ type: "button", classes: ["save"], text: "Save" });
+        saveBtn.value = "save";
+        return saveBtn;
     }
 
     #createDeleteButton() {
-        return createNode({ type: "button", classes: ["delete"], text: "Delete" });
+        const delBtn = createNode({ type: "button", classes: ["delete"], text: "Delete" });
+        delBtn.value = "delete";
+        return delBtn;
     }
-}
 
-export class AddItemForm extends ItemDetailsForm {
-    constructor() {
-        super();
+    #save() {
+        const form = {
+            data: new FormData(this.node),
+            id: this.#item ? this.#item.id : null
+        };
+
+        pubSub.publish(events.saveDetails, form);
+    }
+
+    #cancel() {
+        // Nothing to do
+        return;
+    }
+
+    #delete() {
+        if (!this.#item) {
+            // No item to delete
+            return;
+        }
+
+        if (confirm(`Are you sure you want to delete the item "${this.#item.title}"?`)) {
+            pubSub.publish(events.deleteItem, this.#item.id);
+        }
     }
 }
 

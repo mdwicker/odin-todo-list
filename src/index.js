@@ -1,7 +1,7 @@
 import "./reset.css";
 import "./styles.css";
 import { todoController } from './todo.js';
-import { createDomController } from './dom.js';
+import { ItemDetailsForm, createDomController } from './dom.js';
 import { events, pubSub } from './pubSub.js';
 
 
@@ -43,6 +43,7 @@ todoController.moveItem(2, 2);
 
 const domController = createDomController(todoController.getLists());
 
+// Set new list when new list is requested
 pubSub.subscribe(events.changeList, (info) => {
     if (info.id === "all") {
         pubSub.publish(events.setList, { id: "all", title: "All Items" });
@@ -74,5 +75,9 @@ pubSub.subscribe(events.setList, (list) => {
 })
 
 
-// Initialize list
+// Initialize visible list
 pubSub.publish(events.setList, { id: "all", title: "All Items" });
+
+pubSub.subscribe(events.formSave, (data) => {
+    console.log(data);
+})

@@ -33,4 +33,7 @@ export const events = {
     addList: "addList",
     updateDisplayItems: "updateDisplayItems",
     updateItem: "updateItem",
+    updateLists: "updateLists",
+    saveDetails: "saveDetails",
+    deleteItem: "deleteItem",
 }
