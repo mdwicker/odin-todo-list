@@ -29,11 +29,8 @@ class PubSub {
 export const pubSub = new PubSub();
 export const events = {
     changeList: "changeList",
-    setList: "setList",
+    itemChecked: "itemChecked",
     addList: "addList",
-    updateItem: "updateItem",
-    updateLists: "updateLists",
-    saveDetails: "saveDetails",
+    saveItemDetails: "saveDetails",
     deleteItem: "deleteItem",
-    itemChecked: "itemChecked"
 }

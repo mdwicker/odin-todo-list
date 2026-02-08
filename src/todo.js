@@ -20,11 +20,11 @@ export class TodoItem {
     listId;
     #title;
     #description;
-    #dueDate;
+    #duedate;
     #priority;
     #isComplete;
 
-    constructor({ id, listId = "1", title, description, dueDate, priority, isComplete } = {}) {
+    constructor({ id, listId = "1", title, description, duedate, priority, isComplete } = {}) {
         if (id === undefined) {
             this.#id = String(TodoItem.#nextId());
         } else {
@@ -35,7 +35,7 @@ export class TodoItem {
 
         this.title = title;
         this.description = description;
-        this.dueDate = dueDate;
+        this.duedate = duedate;
         this.priority = priority;
         this.#isComplete = isComplete ?? false;
     }
@@ -68,19 +68,19 @@ export class TodoItem {
         }
     }
 
-    get dueDate() {
-        return this.#dueDate;
+    get duedate() {
+        return this.#duedate;
     }
 
-    set dueDate(dueDate) {
-        if (dueDate === undefined) {
-            this.#dueDate = new Date();
+    set duedate(duedate) {
+        if (duedate === undefined) {
+            this.#duedate = new Date();
         } else {
-            const date = new Date(dueDate);
+            const date = new Date(duedate);
             if (isNaN(date)) {
-                throw new Error(`${dueDate} is not a valid date.`);
+                throw new Error(`${duedate} is not a valid date.`);
             }
-            this.#dueDate = date;
+            this.#duedate = date;
         }
     }
 
@@ -120,7 +120,7 @@ export class TodoItem {
             listId: this.listId,
             title: this.title,
             description: this.description,
-            dueDate: this.#dueDate,
+            duedate: this.#duedate,
             priority: this.priority,
             isComplete: this.#isComplete
         }
@@ -132,7 +132,7 @@ export class TodoItem {
             listId: this.listId,
             title: this.title,
             description: this.description,
-            dueDate: format(this.#dueDate, "yyyy-MM-dd"),
+            duedate: format(this.#duedate, "yyyy-MM-dd"),
             priority: String(this.priority),
             isComplete: this.#isComplete
         }
@@ -216,7 +216,7 @@ export const todoController = (function () {
             return { listTitle: getList(item.listId).title, ...item.getData() }
         });
 
-        if (listId) {
+        if (listId && listId !== "all") {
             itemsToGet = itemsToGet.filter(item => item.listId === String(listId));
         }
 

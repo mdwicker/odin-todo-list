@@ -2,22 +2,53 @@ import { format } from "date-fns";
 import { pubSub, events } from "./pubSub.js";
 
 
-export const createDomController = function (lists) {
+export const createDomController = function ({ lists, items } = {}) {
     const itemNodes = {};
     const listNodes = {};
 
     const container = document.querySelector('.todo-items');
-    const navList = document.querySelector('.nav-list');
     const listHeader = document.querySelector('.list-title');
 
+    const navList = document.querySelector('.nav-list');
+    listNodes["all"] = document.getElementById("all-items");
+    listNodes["all"].addEventListener("click", () => {
+        pubSub.publish(events.changeList, { id: "all" });
+    });
+
+
     updateLists(lists);
+    updateSelectedList({ id: "all", title: "All Items" });
+    displayItems(items);
     setupAddItemForm(lists);
 
-    for (const list of lists) {
-        pubSub.publish(events.addList, list)
+    function setupAddItemForm(lists) {
+        const addItemBtn = document.getElementById("add-item");
+        const addItemForm = new ItemDetailsForm({
+            lists, item: {
+                id: 5, title: "New", description: "Hi there", listId: 2, priority: 5, duedate: new Date()
+            }
+        });
+
+        // initialize hidden form
+        const formNode = addItemForm.node;
+        formNode.classList.add("hidden");
+        addItemBtn.after(formNode);
+
+
+        // replace button with form on button click
+        addItemBtn.addEventListener("click", () => {
+            formNode.classList.remove("hidden");
+            addItemBtn.classList.add("hidden");
+        });
+
+        // replace form with button on submit
+        formNode.addEventListener("submit", () => {
+            formNode.classList.add("hidden");
+            addItemBtn.classList.remove("hidden");
+        })
     }
 
-    const displayItems = function (items) {
+    function displayItems(items) {
         // Clear displayed items
         for (const [id, item] of Object.entries(itemNodes)) {
             item.node.remove();
@@ -32,7 +63,7 @@ export const createDomController = function (lists) {
         }
     };
 
-    const removeItem = function (id) {
+    function removeItem(id) {
         if (id in itemNodes) {
             itemNodes[id].node.remove();
             delete itemNodes[id];
@@ -41,7 +72,7 @@ export const createDomController = function (lists) {
         }
     };
 
-    const updateItem = function (item) {
+    function updateItem(item) {
         if (item.id in itemNodes) {
             itemNodes[item.id].render(item);
         } else {
@@ -49,10 +80,12 @@ export const createDomController = function (lists) {
         }
     };
 
-    const updateLists = function (lists) {
+    function updateLists(lists) {
         for (const [id, node] of Object.entries(listNodes)) {
-            node.remove();
-            delete listNodes[id];
+            if (id !== "all") {
+                node.remove();
+                delete listNodes[id];
+            }
         }
 
         for (const list of lists) {
@@ -71,7 +104,7 @@ export const createDomController = function (lists) {
         }
     }
 
-    const updateSelectedList = function (selected) {
+    function updateSelectedList(selected) {
         for (const [id, node] of Object.entries(listNodes)) {
             node.classList.toggle("selected", id == selected.id);
         }
@@ -86,32 +119,7 @@ export const createDomController = function (lists) {
 }
 
 
-function setupAddItemForm(lists) {
-    const addItemBtn = document.getElementById("add-item");
-    const addItemForm = new ItemDetailsForm({
-        lists, item: {
-            id: 5, title: "New", description: "Hi there", listId: 2, priority: 5, dueDate: new Date()
-        }
-    });
 
-    // initialize hidden form
-    const formNode = addItemForm.node;
-    formNode.classList.add("hidden");
-    addItemBtn.after(formNode);
-
-
-    // replace button with form on button click
-    addItemBtn.addEventListener("click", () => {
-        formNode.classList.remove("hidden");
-        addItemBtn.classList.add("hidden");
-    });
-
-    // replace form with button on submit
-    formNode.addEventListener("submit", () => {
-        formNode.classList.add("hidden");
-        addItemBtn.classList.remove("hidden");
-    })
-}
 
 
 // Todo Items
@@ -224,6 +232,7 @@ export class TodoItemNode {
         this.#checkbox = createNode({ type: "input" });
         this.#checkbox.type = "checkbox";
         this.#checkbox.ariaLabel = "item completion toggle";
+        return this.#checkbox;
     }
 
     #toggleDetails() {
@@ -242,10 +251,10 @@ export class TodoItemNode {
         }
         this.#title.textContent = item.title;
         this.#list.textContent = item.listTitle;
-        this.#duedate.textContent = formatDueDate(item.dueDate);
+        this.#duedate.textContent = formatDuedate(item.duedate);
         this.#description.textContent = item.description ?? "";
         this.#priority.textContent = `Priority ${item.priority}`;
-        this.checkbox.checked = item.isComplete;
+        this.#checkbox.checked = item.isComplete;
     }
 }
 
@@ -345,19 +354,6 @@ export class ItemDetailsForm {
             }
         }
 
-        // Update visible lists when lists are changed
-        pubSub.subscribe(events.updateLists, (lists) => {
-            while (input.lastElementChild) {
-                input.removeChild(input.lastElementChild);
-            }
-
-            for (const list of this.lists) {
-                const option = createNode({ type: "option", text: list.title });
-                option.value = list.id;
-                input.append(option);
-            }
-        });
-
         const listNode = createNode({ classes: ["form-control"] });
         listNode.append(label, input);
         return listNode;
@@ -382,7 +378,7 @@ export class ItemDetailsForm {
         const input = createNode({ type: "input", id: "new-item-duedate" });
         input.name = "duedate";
         input.type = "date";
-        if (this.#item) input.value = format(this.#item.dueDate, "yyyy-MM-dd");
+        if (this.#item) input.value = format(this.#item.duedate, "yyyy-MM-dd");
 
         const duedateNode = createNode({ classes: ["form-control"] })
         duedateNode.append(label, input);
@@ -426,7 +422,7 @@ export class ItemDetailsForm {
             id: this.#item ? this.#item.id : null
         };
 
-        pubSub.publish(events.saveDetails, form);
+        pubSub.publish(events.saveItemDetails, form);
     }
 
     #cancel() {
@@ -477,7 +473,7 @@ function createNode({ type = "div", classes, id, text } = {}) {
     return node;
 }
 
-function formatDueDate(date) {
+function formatDuedate(date) {
     date = new Date(date);
     if (date.getFullYear() === new Date().getFullYear()) {
         return `due ${format(date, "MMM. d")}`;
