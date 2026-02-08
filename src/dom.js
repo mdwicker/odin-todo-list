@@ -17,17 +17,12 @@ export const createDomController = function ({ lists, items } = {}) {
 
 
     updateLists(lists);
-    updateSelectedList({ id: "all", title: "All Items" });
-    displayItems(items);
     setupAddItemForm(lists);
+    displayItems(items);
 
     function setupAddItemForm(lists) {
         const addItemBtn = document.getElementById("add-item");
-        const addItemForm = new ItemDetailsForm({
-            lists, item: {
-                id: 5, title: "New", description: "Hi there", listId: 2, priority: 5, duedate: new Date()
-            }
-        });
+        const addItemForm = new ItemDetailsForm({ lists });
 
         // initialize hidden form
         const formNode = addItemForm.node;
@@ -59,6 +54,15 @@ export const createDomController = function ({ lists, items } = {}) {
         for (const item of items) {
             const itemNode = new TodoItemNode({ item });
             itemNodes[item.id] = itemNode;
+
+            itemNode.editBtn.addEventListener("click", () => {
+                const editForm = new ItemDetailsForm({ item, lists });
+                itemNode.node.replaceWith(editForm.node);
+                editForm.node.addEventListener("submit", () => {
+                    editForm.node.remove();
+                })
+            });
+
             container.append(itemNode.node);
         }
     };
@@ -80,7 +84,7 @@ export const createDomController = function ({ lists, items } = {}) {
         }
     };
 
-    function updateLists(lists) {
+    function updateLists(newLists) {
         for (const [id, node] of Object.entries(listNodes)) {
             if (id !== "all") {
                 node.remove();
@@ -88,7 +92,7 @@ export const createDomController = function ({ lists, items } = {}) {
             }
         }
 
-        for (const list of lists) {
+        for (const list of newLists) {
             const listNode = createNode({
                 type: "li",
                 classes: ["nav-link"],
@@ -102,6 +106,8 @@ export const createDomController = function ({ lists, items } = {}) {
                 pubSub.publish(events.changeList, { id: list.id });
             });
         }
+
+        lists = newLists;
     }
 
     function updateSelectedList(selected) {
@@ -152,7 +158,7 @@ export class TodoItemNode {
             })
         }
 
-        this.#expandBtn.addEventListener("click", () => this.#toggleDetails());
+        this.#expandBtn.addEventListener("click", () => { this.#toggleDetails(); });
     }
 
     #createLeft() {
@@ -262,6 +268,7 @@ export class TodoItemNode {
 // Item Details Form
 
 export class ItemDetailsForm {
+    #titleInput;
     #item;
 
     constructor({ item, lists } = {}) {
@@ -343,7 +350,7 @@ export class ItemDetailsForm {
         const label = createNode({ type: "label", text: "List" });
         label.for = "new-item-list";
         const input = createNode({ type: "select", id: "new-item-list" });
-        input.name = "list";
+        input.name = "listId";
 
         for (const list of this.lists) {
             const option = createNode({ type: "option", text: list.title });
@@ -378,7 +385,11 @@ export class ItemDetailsForm {
         const input = createNode({ type: "input", id: "new-item-duedate" });
         input.name = "duedate";
         input.type = "date";
-        if (this.#item) input.value = format(this.#item.duedate, "yyyy-MM-dd");
+        input.defaultValue = format(new Date(), "yyyy-MM-dd");
+
+        if (this.#item) {
+            input.value = format(this.#item.duedate, "yyyy-MM-dd");
+        }
 
         const duedateNode = createNode({ classes: ["form-control"] })
         duedateNode.append(label, input);
@@ -391,6 +402,7 @@ export class ItemDetailsForm {
         const input = createNode({ type: "input", id: "new-item-priority" });
         input.name = "priority";
         input.type = "number";
+        input.defaultValue = 1;
         if (this.#item) input.value = this.#item.priority;
 
         const priorityNode = createNode({ classes: ["form-control"] })

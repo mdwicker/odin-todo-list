@@ -41,12 +41,16 @@ todoController.moveItem(2, 2);
 
 
 const viewOptions = {
-    list: "all",
     filterDuedate: "all",
     filterPriority: "all",
     filterCompletion: "all",
     sort: "duedate",
     order: "descending",
+}
+
+const view = {
+    listId: "all",
+    filter, sort
 }
 
 function filter(item) {
@@ -74,7 +78,7 @@ function filter(item) {
     function filterDuedate(itemDate, filterDate) {
         const today = new Date();
 
-        if (filterDate === "overdue") {
+        if (filterDate <= today) {
             return itemDate <= today;
         }
 
@@ -106,10 +110,14 @@ function sort(a, b) {
 
 const domController = createDomController({
     lists: todoController.getLists(),
-    items: todoController.getItems({ listId: viewOptions.list, filter, sort })
+    items: todoController.getItems(view)
 });
 
+domController.updateSelectedList({ id: "all", title: "All Items" });
+
+
 // Event wiring
+
 pubSub.subscribe(events.changeList, (target) => {
     let list;
     if (target.id === "all") {
@@ -118,10 +126,32 @@ pubSub.subscribe(events.changeList, (target) => {
         list = todoController.getList(target.id);
     }
     if (!list) return;
+    view.listId = list.id;
 
     domController.updateSelectedList(list);
-    domController.displayItems(todoController.getItems({
-        listId: list.id, filter, sort
-    }));
+    domController.displayItems(todoController.getItems(view));
 })
+
+pubSub.subscribe(events.itemChecked, (e) => {
+    todoController.toggleItemCompletion(e.id, { complete: e.checked });
+})
+
+pubSub.subscribe(events.saveItemDetails, (e) => {
+    const details = {};
+    for (const [key, value] of e.data) {
+        details[key] = value;
+    }
+    if (e.id) {
+        todoController.editItem(e.id, details);
+    } else {
+        todoController.addItem(details);
+    }
+
+    domController.displayItems(todoController.getItems(view))
+});
+
+pubSub.subscribe(events.deleteItem, (id) => {
+    todoController.removeItem(id);
+    domController.displayItems(view);
+});
 

@@ -245,7 +245,7 @@ export const todoController = (function () {
         const item = items[String(id)];
         if (!item) return;
 
-        const skipFields = new Set(["id", "listId", "isComplete"]);
+        const skipFields = new Set(["id", "isComplete"]);
 
         for (const [field, value] of Object.entries(fieldsToEdit)) {
             if (skipFields.has(field)) continue;
@@ -256,7 +256,8 @@ export const todoController = (function () {
     }
 
     const toggleItemCompletion = function (id, { complete } = {}) {
-        const item = getItem(id);
+        const item = items[String(id)];
+        if (!item) return;
         item.toggleComplete({ complete });
     }
 
