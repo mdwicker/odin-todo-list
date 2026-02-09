@@ -33,4 +33,5 @@ export const events = {
     addList: "addList",
     saveItemDetails: "saveDetails",
     deleteItem: "deleteItem",
+    changeViewOption: "changeViewOption"
 }

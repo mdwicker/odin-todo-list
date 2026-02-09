@@ -41,11 +41,11 @@ todoController.moveItem(2, 2);
 
 
 const viewOptions = {
-    filterDuedate: "all",
-    filterPriority: "all",
-    filterCompletion: "all",
-    sort: "duedate",
-    order: "descending",
+    "duedateFilter": "all",
+    "priorityFilter": "all",
+    "completionFilter": "all",
+    "sortBy": "duedate",
+    "sortOrder": "descending",
 }
 
 const view = {
@@ -54,39 +54,85 @@ const view = {
 }
 
 function filter(item) {
-    if (viewOptions.filterDuedate !== "all") {
-        const itemDate = new Date(item.duedate);
-        if (!filterDuedate(itemDate, viewOptions.filterDuedate)) {
+    if (viewOptions.duedateFilter !== "all") {
+        if (!duedateFilter(
+            new Date(item.duedate),
+            viewOptions.duedateFilter
+        )) {
             return false;
         }
     }
 
-    if (viewOptions.filterPriority !== "all") {
-        const itemPriority = Number(item.priority);
-        if (!filterPriority(itemPriority, viewOptions.filterPriority)) {
+    if (viewOptions.priorityFilter !== "all") {
+        if (!priorityFilter(
+            Number(item.priority),
+            Number(viewOptions.priorityFilter)
+        )) {
             return false;
         }
     }
 
-    if (viewOptions.filterCompletion !== "all") {
+    if (viewOptions.completionFilter !== "all") {
         itemComplete = item.complete === "true" || item.complete === true;
-        if (itemComplete !== viewOptions.filterCompletion) {
+        if (itemComplete !== viewOptions.completionFilter) {
             return false;
         }
     }
 
-    function filterDuedate(itemDate, filterDate) {
-        const today = new Date();
-
-        if (filterDate <= today) {
-            return itemDate <= today;
+    function duedateFilter(itemDate, filterDate) {
+        if (filterDate === "nodate") {
+            return (!item);
         }
 
-        return today <= itemDate && itemDate <= filterDate;
+        if (filterDate === "all") {
+            return true;
+        }
+
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+        today = today.valueOf()
+
+        itemDate.setHours(0, 0, 0, 0);
+        itemDate = itemDate.valueOf();
+
+        const days = {
+            "today": 0,
+            "tomorrow": 1
+        }
+
+        const ranges = {
+            "week": 7,
+            "month": 30
+        }
+
+        if (filterDate === "overdue") {
+            return itemDate < today;
+        }
+
+        if (filterDate in days) {
+            let date = new Date();
+            date.setUTCDate(date.getUTCDate() + days[filterDate]);
+            date.setHours(0, 0, 0, 0);
+            date = date.valueOf();
+
+            return itemDate === date;
+        }
+
+        if (filterDate in ranges) {
+            let max = new Date();
+            max.setUTCDate(max.getUTCDate() + ranges[filterDate]);
+            max.setHours(0, 0, 0, 0);
+            max = max.valueOf();
+
+            return today <= itemDate && itemDate <= max;
+        }
+
+        console.log(`Unknown due date filter ${filterDate}.`);
+        return false;
     }
 
-    function filterPriority(itemPriority, filterPriority) {
-        return itemPriority === filterPriority;
+    function priorityFilter(itemPriority, priorityFilter) {
+        return itemPriority === priorityFilter;
     }
 
     return true;
@@ -95,15 +141,15 @@ function filter(item) {
 function sort(a, b) {
     let comparison;
 
-    if (viewOptions.sort === "duedate") {
+    if (viewOptions.sortBy === "duedate") {
         comparison = new Date(a.duedate) - new Date(b.duedate);
-    } else if (viewOptions.sort === "priority") {
+    } else if (viewOptions.sortBy === "priority") {
         comparison = Number(a.priority) - Number(b.priority);
     }
 
     if (!comparison) comparison = Number(a.id) - Number(b.id);
 
-    return viewOptions.order === "ascending" ? comparison : comparison * -1;
+    return viewOptions.sortOrder === "ascending" ? comparison : comparison * -1;
 }
 
 // App initialization
@@ -152,6 +198,11 @@ pubSub.subscribe(events.saveItemDetails, (e) => {
 
 pubSub.subscribe(events.deleteItem, (id) => {
     todoController.removeItem(id);
-    domController.displayItems(view);
+    domController.displayItems(todoController.getItems(view));
 });
+
+pubSub.subscribe(events.changeViewOption, (e) => {
+    viewOptions[e.option] = e.value;
+    domController.displayItems(todoController.getItems(view));
+})
 

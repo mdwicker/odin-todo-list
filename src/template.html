@@ -19,7 +19,7 @@
                     <div class="filter">
                         <div class="option-label">Filter by</div>
                         <div class="filter-options">
-                            <select name="duedate-filter">
+                            <select name="duedate-filter" id="duedateFilter">
                                 <option value="" disabled selected>Due Date</option>
                                 <option value="overdue">Overdue</option>
                                 <option value="today">Today</option>
@@ -29,7 +29,7 @@
                                 <option value="nodate">No Due Date</option>
                                 <option value="all">All</option>
                             </select>
-                            <select name="priority-filter">
+                            <select name="priority-filter" id="priorityFilter">
                                 <option value="" disabled selected>Priority</option>
                                 <option value="0">0</option>
                                 <option value="1">1</option>
@@ -39,7 +39,7 @@
                                 <option value="5">5</option>
                                 <option value="all">All</option>
                             </select>
-                            <select name="completion-filter">
+                            <select name="completion-filter" id="completionFilter">
                                 <option value="" disabled selected>Completion</option>
                                 <option value="true">Complete</option>
                                 <option value="false">Incomplete</option>
@@ -49,15 +49,15 @@
                     </div>
                     <div class="sort">
                         <div class="view-control">
-                            <label class="option-label" for="sort-options">Sort by</label>
-                            <select name="sort" id="sort-options">
+                            <label class="option-label" for="sortBy">Sort by</label>
+                            <select name="sort" id="sortBy">
                                 <option value="duedate">Due Date</option>
                                 <option value="priority">Priority</option>
                             </select>
                         </div>
                         <div class="view-control">
-                            <label class="option-label" for="sort-order">Sort order</label>
-                            <select name="sort" id="sort-order">
+                            <label class="option-label" for="sortOrder">Sort order</label>
+                            <select name="sort" id="sortOrder">
                                 <option value="descending">Descending</option>
                                 <option value="ascending">Ascending</option>
                             </select>

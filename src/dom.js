@@ -3,22 +3,43 @@ import { pubSub, events } from "./pubSub.js";
 
 
 export const createDomController = function ({ lists, items } = {}) {
+    // set up currently state
     const itemNodes = {};
     const listNodes = {};
 
+    // cache DOM elements
     const container = document.querySelector('.todo-items');
     const listHeader = document.querySelector('.list-title');
 
+    // Initialize navigation list
     const navList = document.querySelector('.nav-list');
     listNodes["all"] = document.getElementById("all-items");
     listNodes["all"].addEventListener("click", () => {
         pubSub.publish(events.changeList, { id: "all" });
     });
-
-
     updateLists(lists);
+
+    // Initialize view options
+    setupViewOptions();
+
+    // Initialize Add Item button
     setupAddItemForm(lists);
+
+    // Initialize display items
     displayItems(items);
+
+
+    function setupViewOptions() {
+        const viewOptions = document.querySelector(".view-options");
+        viewOptions.querySelectorAll("select").forEach((viewOption) => {
+            viewOption.addEventListener("change", () => {
+                pubSub.publish(events.changeViewOption, {
+                    option: viewOption.id,
+                    value: viewOption.value
+                })
+            });
+        });
+    }
 
     function setupAddItemForm(lists) {
         const addItemBtn = document.getElementById("add-item");
