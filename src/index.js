@@ -64,12 +64,8 @@ function filter(item) {
     }
 
     if (viewOptions.priorityFilter !== "all") {
-        if (!priorityFilter(
-            Number(item.priority),
-            Number(viewOptions.priorityFilter)
-        )) {
-            return false;
-        }
+        const priority = Number(viewOptions.priorityFilter);
+        if (!item.matchesPriorityFilter(priority)) return false;
     }
 
     if (viewOptions.completionFilter !== "all") {
@@ -92,10 +88,6 @@ function filter(item) {
         if (!(dateFilter in filters)) return true;
 
         return filters[dateFilter]();
-    }
-
-    function priorityFilter(itemPriority, priorityFilter) {
-        return itemPriority === priorityFilter;
     }
 
     return true;

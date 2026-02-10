@@ -136,7 +136,7 @@ export class TodoItem {
 
     isDueInExactly(numberOfDays) {
         if (!Number.isInteger(numberOfDays) || numberOfDays < 0) {
-            throw new TypeError("isDueWithin requires a non-negative integer.");
+            throw new TypeError("isDueInExactly requires a non-negative integer.");
         }
 
         const today = new Date();
@@ -161,6 +161,14 @@ export class TodoItem {
 
         return this.#duedate.valueOf() >= today.valueOf()
             && this.#duedate.valueOf() <= max.valueOf();
+    }
+
+    matchesPriority(priority) {
+        if (!Number.isInteger(priority) || priority < 0) {
+            throw new TypeError("matchesPriority requires a non-negative integer.");
+        }
+
+        return priority === this.#priority;
     }
 
     toJson() {
