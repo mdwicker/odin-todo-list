@@ -164,7 +164,7 @@ domController.updateSelectedList({ id: "all", title: "All Items" });
 
 // Event wiring
 
-pubSub.subscribe(events.changeList, (target) => {
+pubSub.subscribe(events.changeSelectedList, (target) => {
     let list;
     if (target.id === "all") {
         list = { id: "all", title: "All Items" }
@@ -204,5 +204,10 @@ pubSub.subscribe(events.deleteItem, (id) => {
 pubSub.subscribe(events.changeViewOption, (e) => {
     viewOptions[e.option] = e.value;
     domController.displayItems(todoController.getItems(view));
+})
+
+pubSub.subscribe(events.addList, (listName) => {
+    todoController.addList({ title: listName });
+    pubSub.publish(events.listsChanged, todoController.getLists());
 })
 

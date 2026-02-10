@@ -253,7 +253,7 @@ button.expand {
   box-shadow: none;
 }
 
-button#add-item,
+button.add,
 button.save {
   height: auto;
   padding: 4px 12px;
@@ -323,6 +323,18 @@ select {
 .nav-link.selected {
   font-weight: 600;
   text-shadow: 0 1px 0 rgba(241, 239, 230, 0.6);
+}
+
+#add-list-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#add-list-form input {
+  font-size: var(--text-sm);
+  font-family: var(--formal);
+  text-transform: uppercase;
 }
 
 /* =========================

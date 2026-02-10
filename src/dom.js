@@ -10,14 +10,10 @@ export const createDomController = function ({ lists, items } = {}) {
     // cache DOM elements
     const container = document.querySelector('.todo-items');
     const listHeader = document.querySelector('.list-title');
+    const addListBtn = document.getElementById("add-list");
 
     // Initialize navigation list
-    const navList = document.querySelector('.nav-list');
-    listNodes["all"] = document.getElementById("all-items");
-    listNodes["all"].addEventListener("click", () => {
-        pubSub.publish(events.changeList, { id: "all" });
-    });
-    updateLists(lists);
+    setupNavList();
 
     // Initialize view options
     setupViewOptions();
@@ -28,6 +24,49 @@ export const createDomController = function ({ lists, items } = {}) {
     // Initialize display items
     displayItems(items);
 
+
+    function setupNavList() {
+        // Set up add "all items" link
+        listNodes["all"] = document.getElementById("all-items");
+        listNodes["all"].addEventListener("click", () => {
+            pubSub.publish(events.changeSelectedList, { id: "all" });
+        });
+
+        // Set up "add list" button
+        const addListForm = createNode({ type: "form", classes: ["nav-link"], id: "add-list-form" });
+        const addListInput = createNode({ type: "input" });
+        addListInput.name = "list-name";
+        addListInput.ariaLabel = "new list input"
+        addListForm.append(
+            addListInput,
+            createNode({ type: "button", classes: ["save"], text: "Save" })
+        );
+        addListBtn.addEventListener("click", () => {
+            addListBtn.replaceWith(addListForm);
+        });
+
+        addListForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            let listName = addListInput.value;
+            addListForm.reset();
+            addListForm.replaceWith(addListBtn);
+
+            if (listName) {
+                // convert to title case
+                listName = listName.toLowerCase();
+                const words = listName.split(" ");
+                const titleCased = words.map(word => word.charAt(0).toUpperCase() + word.slice(1));
+
+                listName = titleCased.join(" ");
+
+                pubSub.publish(events.addList, listName);
+            }
+        })
+
+        pubSub.subscribe(events.listsChanged, (lists) => updateLists(lists));
+
+        updateLists(lists);
+    }
 
     function setupViewOptions() {
         const viewOptions = document.querySelector(".view-options");
@@ -121,10 +160,10 @@ export const createDomController = function ({ lists, items } = {}) {
             });
 
             listNodes[list.id] = listNode;
-            navList.append(listNode);
+            addListBtn.before(listNode);
 
             listNode.addEventListener("click", () => {
-                pubSub.publish(events.changeList, { id: list.id });
+                pubSub.publish(events.changeSelectedList, { id: list.id });
             });
         }
 
@@ -373,18 +412,33 @@ export class ItemDetailsForm {
         const input = createNode({ type: "select", id: "new-item-list" });
         input.name = "listId";
 
-        for (const list of this.lists) {
-            const option = createNode({ type: "option", text: list.title });
-            option.value = list.id;
-            input.append(option);
-            if (this.#item && list.id === String(this.#item.listId)) {
-                option.selected = true;
+        input.append(...this.#createListOptions(this.lists));
+
+        pubSub.subscribe(events.listsChanged, (lists) => {
+            while (input.lastElementChild) {
+                input.removeChild(input.lastElementChild);
             }
-        }
+            input.append(...this.#createListOptions(lists));
+        })
 
         const listNode = createNode({ classes: ["form-control"] });
         listNode.append(label, input);
+
         return listNode;
+    }
+
+    #createListOptions(lists) {
+        const options = []
+        for (const list of lists) {
+            const option = createNode({ type: "option", text: list.title });
+            option.value = list.id;
+            if (this.#item && list.id === String(this.#item.listId)) {
+                option.selected = true;
+            }
+
+            options.push(option);
+        }
+        return options;
     }
 
     #createDescriptionInput() {
