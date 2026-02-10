@@ -277,6 +277,9 @@ button.save {
 
 .nav-link {
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .list-title {
@@ -320,6 +323,30 @@ select {
   font-weight: 500;
 }
 
+.nav-link .delete-list {
+  display: none;
+}
+
+.nav-link:hover .delete-list {
+  display: inline-block;
+  justify-content: center;
+  align-items: center;
+
+  width: 18px;
+  height: 18px;
+  line-height: 12px;
+  border-radius: 50%;
+
+  color: #5b2a26;
+  /* color: #f1efe6; */
+
+  font-family: Arial, sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 1000;
+  text-align: center;
+  cursor: pointer;
+}
+
 .nav-link.selected {
   font-weight: 600;
   text-shadow: 0 1px 0 rgba(241, 239, 230, 0.6);
@@ -333,8 +360,8 @@ select {
 
 #add-list-form input {
   font-size: var(--text-sm);
-  font-family: var(--formal);
-  text-transform: uppercase;
+  font-family: var(--rustic);
+  /* text-transform: uppercase; */
 }
 
 /* =========================

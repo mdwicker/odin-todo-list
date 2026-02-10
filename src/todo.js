@@ -213,7 +213,12 @@ export const todoController = (function () {
 
     const getItems = function ({ listId, filter, sort } = {}) {
         let itemsToGet = Object.values(items).map(item => {
-            return { listTitle: getList(item.listId).title, ...item.getData() }
+            const returnItem = { ...item.getData() };
+            if (item.listId in lists) {
+                returnItem["listTitle"] = getList(item.listId).title;
+            }
+
+            return returnItem;
         });
 
         if (listId && listId !== "all") {
@@ -298,10 +303,13 @@ export const todoController = (function () {
         if (id == "1") {
             return; // Cannot delete Main list.
         }
-        const list = getList(id);
-        delete lists[String(list.id)];
+        const list = lists[String(id)];
+        if (!list) {
+            console.log("Couldn't find list to delete: ", id);
+        }
+        delete lists[String(id)];
         const listItems = getItems({ listId: id });
-        listItems.forEach(item => removeItem(item.id));
+        listItems.forEach(item => moveItem(item.id, 1));
         return { list, items: listItems };
     }
 

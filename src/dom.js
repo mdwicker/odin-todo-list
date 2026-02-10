@@ -33,7 +33,7 @@ export const createDomController = function ({ lists, items } = {}) {
         });
 
         // Set up "add list" button
-        const addListForm = createNode({ type: "form", classes: ["nav-link"], id: "add-list-form" });
+        const addListForm = createNode({ type: "form", id: "add-list-form" });
         const addListInput = createNode({ type: "input" });
         addListInput.name = "list-name";
         addListInput.ariaLabel = "new list input"
@@ -156,14 +156,41 @@ export const createDomController = function ({ lists, items } = {}) {
             const listNode = createNode({
                 type: "li",
                 classes: ["nav-link"],
-                text: list.title
             });
+
+            const nodeContents = []
+
+            const titleSpan = createNode({
+                type: "span",
+                text: list.title
+            })
+
+            nodeContents.push(titleSpan);
+
+            // Don't allow user to delete the default list
+            if (list.id !== "1") {
+                const deleteSpan = createNode({
+                    type: "span",
+                    classes: ["delete-list"],
+                    text: "ⓧ"
+                });
+                deleteSpan.ariaLabel = "Delete list";
+
+                nodeContents.push(deleteSpan);
+            }
+
+            listNode.append(...nodeContents);
 
             listNodes[list.id] = listNode;
             addListBtn.before(listNode);
 
-            listNode.addEventListener("click", () => {
-                pubSub.publish(events.changeSelectedList, { id: list.id });
+            listNode.addEventListener("click", (e) => {
+                if (e.target.classList.contains("delete-list") &&
+                    confirm(`Delete "${list.title}" list?`)) {
+                    pubSub.publish(events.deleteList, list.id);
+                } else {
+                    pubSub.publish(events.changeSelectedList, { id: list.id });
+                }
             });
         }
 

@@ -31,6 +31,7 @@ export const events = {
     changeSelectedList: "changeSelectedList",
     itemChecked: "itemChecked",
     addList: "addList",
+    deleteList: "deleteList",
     listsChanged: "listsChanged",
     saveItemDetails: "saveDetails",
     deleteItem: "deleteItem",

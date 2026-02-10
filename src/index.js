@@ -204,10 +204,16 @@ pubSub.subscribe(events.deleteItem, (id) => {
 pubSub.subscribe(events.changeViewOption, (e) => {
     viewOptions[e.option] = e.value;
     domController.displayItems(todoController.getItems(view));
-})
+});
 
 pubSub.subscribe(events.addList, (listName) => {
     todoController.addList({ title: listName });
     pubSub.publish(events.listsChanged, todoController.getLists());
-})
+});
+
+pubSub.subscribe(events.deleteList, (id) => {
+    todoController.removeList(id);
+    pubSub.publish(events.listsChanged, todoController.getLists());
+    domController.displayItems(todoController.getItems(view));
+});
 
