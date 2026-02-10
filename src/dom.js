@@ -52,12 +52,6 @@ export const createDomController = function ({ lists, items } = {}) {
             addListForm.replaceWith(addListBtn);
 
             if (listName) {
-                // convert to title case
-                listName = listName.toLowerCase();
-                const words = listName.split(" ");
-                const titleCased = words.map(word => word.charAt(0).toUpperCase() + word.slice(1));
-
-                listName = titleCased.join(" ");
 
                 pubSub.publish(events.addList, listName);
             }

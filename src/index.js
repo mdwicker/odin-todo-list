@@ -1,6 +1,6 @@
 import "./reset.css";
 import "./styles.css";
-import { todoController } from './todo.js';
+import { todo } from './todo.js';
 import { ItemDetailsForm, createDomController } from './dom.js';
 import { events, pubSub } from './pubSub.js';
 
@@ -32,46 +32,78 @@ const fillerItems = [
 // const fillerLists = 
 
 for (const item of fillerItems) {
-    todoController.addItem(item);
+    todo.addItem(item);
 }
 
-todoController.addList({ title: "Work" });
-
-todoController.moveItem(2, 2);
+todo.addList("Work");
 
 
-const viewOptions = {
-    "duedateFilter": "all",
-    "priorityFilter": "all",
-    "completionFilter": "all",
-    "sortBy": "duedate",
-    "sortOrder": "descending",
-}
 
-const view = {
-    listId: "all",
-    filter, sort
-}
+const DEFAULT_LIST = "all";
 
-function filter(item) {
-    if (viewOptions.duedateFilter !== "all") {
-        if (!duedateFilter(
-            item,
-            viewOptions.duedateFilter
-        )) {
-            return false;
+const viewQuery = (function () {
+    let list = "all"
+    const options = {
+        "duedateFilter": DEFAULT_LIST,
+        "priorityFilter": "all",
+        "completionFilter": "all",
+        "sortBy": "duedate",
+        "sortOrder": "desc",
+    }
+
+    function setList(targetList) {
+        list = targetList.id ?? targetList;
+    }
+
+    function setOptions({ option, selection } = {}) {
+        if (!(option in options)) {
+            throw new Error(`Option ${option} does not exist in viewQuery.`);
         }
+
+        options[option] = selection;
     }
 
-    if (viewOptions.priorityFilter !== "all") {
-        const priority = Number(viewOptions.priorityFilter);
-        if (!item.matchesPriorityFilter(priority)) return false;
+    function filter(item) {
+        if (options.duedateFilter !== "all") {
+            if (!duedateFilter(item, options.duedateFilter)) return false;
+        }
+
+        if (options.priorityFilter !== "all") {
+            const priority = Number(options.priorityFilter);
+            if (!item.matchesPriority(priority)) return false;
+        }
+
+        if (options.completionFilter !== "all") {
+            let completeFilter;
+
+            // normalize input from UI
+            if (options.completionFilter === "true") completeFilter = true;
+            if (options.completionFilter === "false") completeFilter = false;
+
+            if (!(item.isComplete === completeFilter)) return false;
+        }
+
+        return true;
     }
 
-    if (viewOptions.completionFilter !== "all") {
-        itemComplete = item.complete === "true" || item.complete === true;
-        if (itemComplete !== viewOptions.completionFilter) {
-            return false;
+    function sort(a, b) {
+        let comparison;
+
+        if (options.sortBy === "duedate") {
+            comparison = a.compareDuedate(b);
+        } else if (options.sortBy === "priority") {
+            comparison = a.comparePriority(b);
+        }
+
+        if (!comparison) comparison = a.id - b.id;
+
+        if (options.sortOrder === "asc") {
+            return comparison;
+        } else if (options.sortOrder === "desc") {
+            return comparison * -1;
+        } else {
+            console.log(`${options.sortOrder} is not a valid sort order. Should be 'asc' or 'desc'.`);
+            return comparison;
         }
     }
 
@@ -90,28 +122,22 @@ function filter(item) {
         return filters[dateFilter]();
     }
 
-    return true;
-}
 
-function sort(a, b) {
-    let comparison;
-
-    if (viewOptions.sortBy === "duedate") {
-        comparison = new Date(a.duedate) - new Date(b.duedate);
-    } else if (viewOptions.sortBy === "priority") {
-        comparison = Number(a.priority) - Number(b.priority);
+    return {
+        setList, setOptions,
+        get listId() {
+            if (list === "all") return "all";
+            return Number(list);
+        },
+        filter, sort
     }
-
-    if (!comparison) comparison = Number(a.id) - Number(b.id);
-
-    return viewOptions.sortOrder === "ascending" ? comparison : comparison * -1;
-}
+})();
 
 // App initialization
 
 const domController = createDomController({
-    lists: todoController.getLists(),
-    items: todoController.getItems(view)
+    lists: todo.getLists(),
+    items: todo.getItems(viewQuery)
 });
 
 domController.updateSelectedList({ id: "all", title: "All Items" });
@@ -124,51 +150,59 @@ pubSub.subscribe(events.changeSelectedList, (target) => {
     if (target.id === "all") {
         list = { id: "all", title: "All Items" }
     } else {
-        list = todoController.getList(target.id);
+        list = todo.getList(target.id);
     }
     if (!list) return;
-    view.listId = list.id;
 
     domController.updateSelectedList(list);
-    domController.displayItems(todoController.getItems(view));
+
+    viewQuery.setList(list);
+    domController.displayItems(todo.getItems(viewQuery));
 })
 
 pubSub.subscribe(events.itemChecked, (e) => {
-    todoController.toggleItemCompletion(e.id, { complete: e.checked });
-})
+    const item = todo.getItem(e.id);
+    item.toggleComplete(e.checked);
+});
 
 pubSub.subscribe(events.saveItemDetails, (e) => {
     const details = {};
     for (const [key, value] of e.data) {
         details[key] = value;
     }
+
+    // normalize data
+    if ('priority' in details) details.priority = Number(details.priority);
+    if ('isComplete' in details) details.isComplete = details.isComplete === true || details.isComplete === 'true';
+    if ('listId' in details) details.listId = Number(details.listId);
+
     if (e.id) {
-        todoController.editItem(e.id, details);
+        todo.editItem(e.id, details);
     } else {
-        todoController.addItem(details);
+        todo.addItem(details);
     }
 
-    domController.displayItems(todoController.getItems(view))
+    domController.displayItems(todo.getItems(viewQuery))
 });
 
 pubSub.subscribe(events.deleteItem, (id) => {
-    todoController.removeItem(id);
-    domController.displayItems(todoController.getItems(view));
+    todo.removeItem(id);
+    domController.displayItems(todo.getItems(viewQuery));
 });
 
 pubSub.subscribe(events.changeViewOption, (e) => {
-    viewOptions[e.option] = e.value;
-    domController.displayItems(todoController.getItems(view));
+    viewQuery.setOptions({ option: e.option, selection: e.value });
+    domController.displayItems(todo.getItems(viewQuery));
 });
 
 pubSub.subscribe(events.addList, (listName) => {
-    todoController.addList({ title: listName });
-    pubSub.publish(events.listsChanged, todoController.getLists());
+    todo.addList(listName);
+    pubSub.publish(events.listsChanged, todo.getLists());
 });
 
 pubSub.subscribe(events.deleteList, (id) => {
-    todoController.removeList(id);
-    pubSub.publish(events.listsChanged, todoController.getLists());
-    domController.displayItems(todoController.getItems(view));
+    todo.removeList(id);
+    pubSub.publish(events.listsChanged, todo.getLists());
+    domController.displayItems(todo.getItems(viewQuery));
 });
 

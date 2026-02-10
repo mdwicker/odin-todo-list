@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+const DEFAULT_LIST_ID = 1;
 
 export class TodoItem {
     static usedIds = new Set();
@@ -7,7 +7,7 @@ export class TodoItem {
         if (this.usedIds.has(id)) {
             throw new Error(`ID ${id} already used.`)
         }
-        else this.usedIds.add(String(id));
+        else this.usedIds.add(id);
     }
 
     static #nextId() {
@@ -18,18 +18,19 @@ export class TodoItem {
 
     #id;
     listId;
-    #title;
-    #description;
+    listTitle;
+    title;
+    description;
     #duedate;
     #priority;
-    #isComplete;
+    isComplete;
 
-    constructor({ id, listId = "1", title, description, duedate, priority, isComplete } = {}) {
+    constructor({ id, listId = DEFAULT_LIST_ID, title, description, duedate, priority, isComplete = false } = {}) {
         if (id === undefined) {
-            this.#id = String(TodoItem.#nextId());
+            this.#id = TodoItem.#nextId();
         } else {
             TodoItem.#addUsedId(id);
-            this.#id = String(id);
+            this.#id = id;
         }
         this.listId = listId;
 
@@ -37,93 +38,48 @@ export class TodoItem {
         this.description = description;
         this.duedate = duedate;
         this.priority = priority;
-        this.#isComplete = isComplete ?? false;
+        this.isComplete = isComplete;
     }
 
     get id() {
         return this.#id;
     }
 
-    get title() {
-        return this.#title;
-    }
-
-    set title(title) {
-        if (!title) {
-            this.#title = "";
-        } else {
-            this.#title = String(title);
-        };
-    }
-
-    get description() {
-        return this.#description;
-    }
-
-    set description(description) {
-        if (!description) {
-            this.#description = "";
-        } else {
-            this.#description = String(description);
-        }
-    }
-
     get duedate() {
-        return this.#duedate;
+        return new Date(this.#duedate);
     }
 
     set duedate(duedate) {
-        if (duedate === undefined) {
-            this.#duedate = new Date();
-        } else {
-            const date = new Date(duedate);
-            if (isNaN(date)) {
-                throw new Error(`${duedate} is not a valid date.`);
-            }
-            date.setHours(0, 0, 0, 0);
-            this.#duedate = date;
+        const date = duedate === undefined ? new Date() : new Date(duedate);
+
+        if (isNaN(date)) {
+            throw new Error(`${duedate} is not a valid date.`);
         }
+        date.setHours(0, 0, 0, 0);
+        this.#duedate = date;
     }
 
     get priority() {
-        return this.#priority
+        return this.#priority;
     }
 
-    set priority(priority) {
-        if (priority === undefined) {
-            this.#priority = 0;
-        } else {
-            priority = Number(priority);
+    set priority(priority = 0) {
+        priority = Number(priority);
 
-            if (!Number.isInteger(priority) || priority < 0 || priority > 5) {
-                throw new Error("Priority must be an integer between 0 and 5.");
-            }
-
-            this.#priority = priority;
+        if (!Number.isInteger(priority) || priority < 0 || priority > 5) {
+            throw new Error("Priority must be an integer between 0 and 5.");
         }
+
+        this.#priority = priority;
     }
 
-    toggleComplete({ complete } = {}) {
-        if (complete === undefined) {
-            this.#isComplete = !this.#isComplete;
+    toggleComplete(complete = null) {
+        if (complete === null) {
+            this.isComplete = !this.isComplete;
+        } else if (!(typeof complete === "boolean")) {
+            throw TypeError("toggleComplete can only take a Boolean value.")
         } else {
-            this.#isComplete = complete;
-        }
-    }
-
-    get isComplete() {
-        return this.#isComplete;
-    }
-
-    getData() {
-        return {
-            id: this.#id,
-            listId: this.listId,
-            title: this.title,
-            description: this.description,
-            duedate: this.#duedate,
-            priority: this.priority,
-            isComplete: this.#isComplete
+            this.isComplete = complete;
         }
     }
 
@@ -168,18 +124,33 @@ export class TodoItem {
             throw new TypeError("matchesPriority requires a non-negative integer.");
         }
 
-        return priority === this.#priority;
+        return priority === this.priority;
     }
 
-    toJson() {
+    compareDuedate(otherItem) {
+        if (!(otherItem instanceof TodoItem)) {
+            throw new TypeError("compareDueDate expects a TodoItem");
+        }
+
+        return this.#duedate.valueOf() - otherItem.duedate.valueOf();
+    }
+
+    comparePriority(otherItem) {
+        if (!(otherItem instanceof TodoItem)) {
+            throw new TypeError("comparePriority expects a TodoItem");
+        }
+        return this.priority - otherItem.priority;
+    }
+
+    getAll() {
         return {
             id: this.#id,
             listId: this.listId,
             title: this.title,
             description: this.description,
-            duedate: format(this.#duedate, "yyyy-MM-dd"),
-            priority: String(this.priority),
-            isComplete: this.#isComplete
+            duedate: new Date(this.#duedate),
+            priority: this.#priority,
+            isComplete: this.isComplete
         }
     }
 }
@@ -188,7 +159,7 @@ export class TodoList {
     static usedIds = new Set();
 
     static #addUsedId(id) {
-        this.usedIds.add(String(id));
+        this.usedIds.add(id);
     }
 
     static #nextId() {
@@ -199,14 +170,17 @@ export class TodoList {
 
     #id;
     #title;
+    canDelete;
 
     constructor({ title = "Main", id } = {}) {
         if (id === undefined) {
             this.#id = String(TodoList.#nextId());
         } else {
             TodoList.#addUsedId(id);
-            this.#id = String(id);
+            this.#id = id;
         }
+
+        this.canDelete = id === DEFAULT_LIST_ID ? false : true;
         this.title = title;
     }
 
@@ -222,34 +196,41 @@ export class TodoList {
         if (!title) {
             this.#title = "";
         } else {
-            this.#title = title;
-        }
-    }
+            // convert to title case
+            title = title.toLowerCase();
+            const words = title.split(" ");
+            const titleCased = words.map(word => {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            });
 
-    toJson() {
-        return {
-            id: this.#id,
-            title: this.#title,
+            this.#title = titleCased.join(" ");
         }
     }
 }
 
-export const todoController = (function () {
+export const todo = (function () {
     const items = {};
     const lists = {};
 
-    lists["1"] = new TodoList({ title: "Main", id: "1" });
+    lists[DEFAULT_LIST_ID] = new TodoList({
+        title: "Main",
+        id: DEFAULT_LIST_ID
+    });
 
     const getItem = function (id) {
-        const item = items[String(id)];
+        const item = items[id];
         if (!item) {
             throw new Error(`Item ${id} not found.`);
         }
-        return { listTitle: getList(item.listId).title, ...item.getData() };
+
+        if (!item.listTitle) {
+            item.listTitle = getList(item.listId).title
+        };
+        return item;
     }
 
     const getList = function (id) {
-        const list = lists[String(id)];
+        const list = lists[id];
         if (!list) {
             throw new Error(`List ${id} not found.`);
         }
@@ -258,16 +239,15 @@ export const todoController = (function () {
 
     const getItems = function ({ listId, filter, sort } = {}) {
         let itemsToGet = Object.values(items).map(item => {
-            const returnItem = { ...item.getData() };
-            if (item.listId in lists) {
-                returnItem["listTitle"] = getList(item.listId).title;
+            // populate with list titles if necessary
+            if (!item.listTitle) {
+                item.listTitle = getList(item.listId).title;
             }
-
-            return returnItem;
+            return item;
         });
 
-        if (listId && listId !== "all") {
-            itemsToGet = itemsToGet.filter(item => item.listId === String(listId));
+        if (listId !== "all") {
+            itemsToGet = itemsToGet.filter(item => item.listId === listId);
         }
 
         if (filter) {
@@ -287,12 +267,12 @@ export const todoController = (function () {
 
     const addItem = function (info) {
         const item = new TodoItem(info);
-        items[String(item.id)] = item;
+        items[item.id] = item;
         return item;
     }
 
     const editItem = function (id, fieldsToEdit) {
-        const item = items[String(id)];
+        const item = items[id];
         if (!item) return;
 
         const skipFields = new Set(["id", "isComplete"]);
@@ -305,63 +285,53 @@ export const todoController = (function () {
         return item;
     }
 
-    const toggleItemCompletion = function (id, { complete } = {}) {
-        const item = items[String(id)];
-        if (!item) return;
-        item.toggleComplete({ complete });
-    }
-
     const removeItem = function (id) {
         if (id in items) {
-            delete items[String(id)];
+            delete items[id];
         }
     }
 
     const moveItem = function (itemId, targetListId) {
-        if (!lists[String(targetListId)]) {
+        if (!lists[targetListId]) {
             throw new Error(`List ${targetListId} not found.`);
         }
         const item = items[itemId];
         if (!item) return;
-        item.listId = String(targetListId);
+        item.listId = targetListId;
+        item.listTitle = getList(targetListId).title;
     }
 
-    const addList = function (info) {
-        const list = new TodoList(info);
-        lists[String(list.id)] = list;
+    const addList = function (title) {
+        const list = new TodoList({ title });
+        lists[list.id] = list;
         return list;
     }
 
-    const editList = function (id, fieldsToEdit) {
-        const list = getList(id);
-
-        for (const field in fieldsToEdit) {
-            if (field in list) {
-                list[field] = fieldsToEdit[field];
-            }
-        }
-
-        return list;
-    }
 
     const removeList = function (id) {
-        if (id == "1") {
-            return; // Cannot delete Main list.
-        }
-        const list = lists[String(id)];
+        const list = lists[id];
         if (!list) {
             console.log("Couldn't find list to delete: ", id);
         }
-        delete lists[String(id)];
+
+        // Don't allow deletion of disallowed liists
+        if (!list.canDelete) {
+            return;
+        }
+
+        delete lists[id];
+
+        // Move items to default list
         const listItems = getItems({ listId: id });
-        listItems.forEach(item => moveItem(item.id, 1));
+        listItems.forEach(item => moveItem(item.id, DEFAULT_LIST_ID));
         return { list, items: listItems };
     }
 
 
     return {
-        getItem, getList, getItems, getLists,
-        addItem, removeItem, editItem, moveItem, toggleItemCompletion,
-        addList, editList, removeList,
+        getItem, getList,
+        getItems, getLists,
+        addItem, editItem, removeItem,
+        addList, removeList,
     }
 })();
