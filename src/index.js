@@ -56,7 +56,7 @@ const view = {
 function filter(item) {
     if (viewOptions.duedateFilter !== "all") {
         if (!duedateFilter(
-            new Date(item.duedate),
+            item,
             viewOptions.duedateFilter
         )) {
             return false;
@@ -79,56 +79,19 @@ function filter(item) {
         }
     }
 
-    function duedateFilter(itemDate, filterDate) {
-        if (filterDate === "nodate") {
-            return (!item);
+    function duedateFilter(item, dateFilter) {
+        const filters = {
+            "overdue": () => item.isOverdue(),
+            "today": () => item.isDueInExactly(0),
+            "tomorrow": () => item.isDueInExactly(1),
+            "week": () => item.isDueWithin(7),
+            "month": () => item.isDueWithin(30)
         }
 
-        if (filterDate === "all") {
-            return true;
-        }
+        if (dateFilter === "all") return true;
+        if (!(dateFilter in filters)) return true;
 
-        let today = new Date();
-        today.setHours(0, 0, 0, 0);
-        today = today.valueOf()
-
-        itemDate.setHours(0, 0, 0, 0);
-        itemDate = itemDate.valueOf();
-
-        const days = {
-            "today": 0,
-            "tomorrow": 1
-        }
-
-        const ranges = {
-            "week": 7,
-            "month": 30
-        }
-
-        if (filterDate === "overdue") {
-            return itemDate < today;
-        }
-
-        if (filterDate in days) {
-            let date = new Date();
-            date.setUTCDate(date.getUTCDate() + days[filterDate]);
-            date.setHours(0, 0, 0, 0);
-            date = date.valueOf();
-
-            return itemDate === date;
-        }
-
-        if (filterDate in ranges) {
-            let max = new Date();
-            max.setUTCDate(max.getUTCDate() + ranges[filterDate]);
-            max.setHours(0, 0, 0, 0);
-            max = max.valueOf();
-
-            return today <= itemDate && itemDate <= max;
-        }
-
-        console.log(`Unknown due date filter ${filterDate}.`);
-        return false;
+        return filters[dateFilter]();
     }
 
     function priorityFilter(itemPriority, priorityFilter) {

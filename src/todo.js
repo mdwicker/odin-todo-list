@@ -80,6 +80,7 @@ export class TodoItem {
             if (isNaN(date)) {
                 throw new Error(`${duedate} is not a valid date.`);
             }
+            date.setHours(0, 0, 0, 0);
             this.#duedate = date;
         }
     }
@@ -124,6 +125,42 @@ export class TodoItem {
             priority: this.priority,
             isComplete: this.#isComplete
         }
+    }
+
+    isOverdue() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return this.#duedate.valueOf() < today.valueOf();
+    }
+
+    isDueInExactly(numberOfDays) {
+        if (!Number.isInteger(numberOfDays) || numberOfDays < 0) {
+            throw new TypeError("isDueWithin requires a non-negative integer.");
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const targetDate = new Date(today);
+        targetDate.setDate(targetDate.getDate() + numberOfDays);
+
+        return this.#duedate.valueOf() === targetDate.valueOf();
+    }
+
+    isDueWithin(numberOfDays) {
+        if (!Number.isInteger(numberOfDays) || numberOfDays < 0) {
+            throw new TypeError("isDueWithin requires a non-negative integer.");
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0)
+
+        const max = new Date(today);
+        max.setDate(max.getDate() + numberOfDays);
+
+        return this.#duedate.valueOf() >= today.valueOf()
+            && this.#duedate.valueOf() <= max.valueOf();
     }
 
     toJson() {
