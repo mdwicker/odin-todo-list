@@ -13,7 +13,7 @@ export const createDomController = function ({ lists, items } = {}) {
     const addListBtn = document.getElementById("add-list");
 
     // Initialize navigation list
-    setupNavList();
+    const navList = createNavList();
 
     // Initialize view options
     setupViewOptions();
@@ -23,44 +23,6 @@ export const createDomController = function ({ lists, items } = {}) {
 
     // Initialize display items
     displayItems(items);
-
-
-    function setupNavList() {
-        // Set up add "all items" link
-        listNodes["all"] = document.getElementById("all-items");
-        listNodes["all"].addEventListener("click", () => {
-            pubSub.publish(events.changeSelectedList, { id: "all" });
-        });
-
-        // Set up "add list" button
-        const addListForm = createNode({ type: "form", id: "add-list-form" });
-        const addListInput = createNode({ type: "input" });
-        addListInput.name = "list-name";
-        addListInput.ariaLabel = "new list input"
-        addListForm.append(
-            addListInput,
-            createNode({ type: "button", classes: ["save"], text: "Save" })
-        );
-        addListBtn.addEventListener("click", () => {
-            addListBtn.replaceWith(addListForm);
-        });
-
-        addListForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-            let listName = addListInput.value;
-            addListForm.reset();
-            addListForm.replaceWith(addListBtn);
-
-            if (listName) {
-
-                pubSub.publish(events.addList, listName);
-            }
-        })
-
-        pubSub.subscribe(events.listsChanged, (lists) => updateLists(lists));
-
-        updateLists(lists);
-    }
 
     function setupViewOptions() {
         const viewOptions = document.querySelector(".view-options");
@@ -138,70 +100,9 @@ export const createDomController = function ({ lists, items } = {}) {
         }
     };
 
-    function updateLists(newLists) {
-        for (const [id, node] of Object.entries(listNodes)) {
-            if (id !== "all") {
-                node.remove();
-                delete listNodes[id];
-            }
-        }
-
-        for (const list of newLists) {
-            const listNode = createNode({
-                type: "li",
-                classes: ["nav-link"],
-            });
-
-            const nodeContents = []
-
-            const titleSpan = createNode({
-                type: "span",
-                text: list.title
-            })
-
-            nodeContents.push(titleSpan);
-
-            // Don't allow user to delete the default list
-            if (list.id !== "1") {
-                const deleteSpan = createNode({
-                    type: "span",
-                    classes: ["delete-list"],
-                    text: "ⓧ"
-                });
-                deleteSpan.ariaLabel = "Delete list";
-
-                nodeContents.push(deleteSpan);
-            }
-
-            listNode.append(...nodeContents);
-
-            listNodes[list.id] = listNode;
-            addListBtn.before(listNode);
-
-            listNode.addEventListener("click", (e) => {
-                if (e.target.classList.contains("delete-list") &&
-                    confirm(`Delete "${list.title}" list?`)) {
-                    pubSub.publish(events.deleteList, list.id);
-                } else {
-                    pubSub.publish(events.changeSelectedList, { id: list.id });
-                }
-            });
-        }
-
-        lists = newLists;
-    }
-
-    function updateSelectedList(selected) {
-        for (const [id, node] of Object.entries(listNodes)) {
-            node.classList.toggle("selected", id == selected.id);
-        }
-
-        listHeader.textContent = selected.title;
-    }
-
     return {
         displayItems, removeItem, updateItem,
-        updateLists, updateSelectedList
+        setLists: navList.setLists, setActiveList: navList.setActiveList
     }
 }
 
@@ -547,6 +448,149 @@ export class ItemDetailsForm {
         if (confirm(`Are you sure you want to delete the item "${this.#item.title}"?`)) {
             pubSub.publish(events.deleteItem, this.#item.id);
         }
+    }
+}
+
+// Nav List
+function createNavList() {
+    const FIXED_LIST_ID = "all";
+    const FIXED_LIST_NODE = document.getElementById("all-items");
+
+    const listHeader = document.querySelector('.list-title');
+
+    const listNodes = {};
+
+    const allItems = document.getElementById("all-items");
+    listNodes[FIXED_LIST_ID] = FIXED_LIST_NODE;
+
+    wireListLinks();
+    setupAddListInteraction();
+
+
+    function wireListLinks() {
+        const navList = document.querySelector('.nav-list');
+
+        navList.addEventListener("click", (e) => {
+            const navLink = e.target.closest(".nav-link");
+            if (!navLink) return;
+
+            let listId = navLink.dataset.listId;
+            if (!listId) return;
+
+            if (listId !== FIXED_LIST_ID) {
+                listId = Number(listId);
+            }
+
+            if (e.target.classList.contains("delete-list") &&
+                confirm(`Do you want to delete this list?`)) {
+                pubSub.publish(events.deleteList, listId);
+            } else {
+                pubSub.publish(events.clickNavList, listId);
+            }
+        });
+    }
+
+    function setupAddListInteraction() {
+        const addListBtn = document.getElementById("add-list");
+        const addListForm = createAddListForm();
+
+        addListBtn.addEventListener("click", () => {
+            addListBtn.replaceWith(addListForm);
+        });
+
+        addListForm.addEventListener("submit", (e) => {
+            // Prevent page refresh
+            e.preventDefault();
+
+            // Capture and normalize submission
+            let listName = addListInput.value;
+            listName = listName.trim();
+
+            // Reset
+            addListForm.reset();
+            addListForm.replaceWith(addListBtn);
+
+            // Publish new list name if not blank
+            if (listName) {
+                pubSub.publish(events.addList, listName);
+            }
+        });
+    }
+
+    function createAddListForm() {
+        const addListForm = createNode({ type: "form", id: "add-list-form" });
+        const addListInput = createNode({ type: "input" });
+        addListInput.name = "list-name";
+        addListInput.ariaLabel = "new list input"
+        addListForm.append(
+            addListInput,
+            createNode({ type: "button", classes: ["save"], text: "Save" })
+        );
+
+        return addListForm;
+    }
+
+    function createListNode(list) {
+        const listNode = createNode({
+            type: "li",
+            classes: ["nav-link"],
+        });
+        listNode.dataset.listId = list.id;
+
+        const nodeContents = []
+
+        const titleSpan = createNode({ type: "span", text: list.title });
+        nodeContents.push(titleSpan);
+
+        if (list.canDelete) {
+            const deleteSpan = createNode({
+                type: "span",
+                classes: ["delete-list"],
+                text: "ⓧ"
+            });
+            deleteSpan.ariaLabel = "Delete list";
+
+            nodeContents.push(deleteSpan);
+        }
+
+        listNode.append(...nodeContents);
+        return listNode;
+    }
+
+    function clearLists() {
+        for (const [id, node] of Object.entries(listNodes)) {
+            if (id !== FIXED_LIST_ID) {
+                node.remove();
+                delete listNodes[id];
+            }
+        }
+    }
+
+    function renderLists(lists) {
+        // reverse list to leave oldest on top
+        // (and also the default on the very top)
+        for (const list of lists.reverse()) {
+            const listNode = createListNode(list)
+            listNodes[list.id] = listNode;
+            FIXED_LIST_NODE.after(listNode);
+        }
+    }
+
+    const setLists = function (lists) {
+        clearLists();
+        renderLists(lists);
+    }
+
+    const setActiveList = function (list) {
+        for (const [id, node] of Object.entries(listNodes)) {
+            node.classList.toggle("selected", id == list.id);
+        }
+
+        listHeader.textContent = list.title;
+    }
+
+    return {
+        setLists, setActiveList
     }
 }
 

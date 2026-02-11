@@ -39,6 +39,7 @@ todo.addList("Work");
 
 
 
+
 const DEFAULT_LIST = "all";
 
 const viewQuery = (function () {
@@ -51,7 +52,7 @@ const viewQuery = (function () {
         "sortOrder": "desc",
     }
 
-    function setList(targetList) {
+    function setActiveList(targetList) {
         list = targetList.id ?? targetList;
     }
 
@@ -124,7 +125,7 @@ const viewQuery = (function () {
 
 
     return {
-        setList, setOptions,
+        setActiveList, setOptions,
         get listId() {
             if (list === "all") return "all";
             return Number(list);
@@ -140,23 +141,24 @@ const domController = createDomController({
     items: todo.getItems(viewQuery)
 });
 
-domController.updateSelectedList({ id: "all", title: "All Items" });
+domController.setActiveList({ id: "all", title: "All Items" });
+domController.setLists(todo.getLists());
 
 
 // Event wiring
 
-pubSub.subscribe(events.changeSelectedList, (target) => {
+pubSub.subscribe(events.clickNavList, (id) => {
     let list;
-    if (target.id === "all") {
+    if (id === "all") {
         list = { id: "all", title: "All Items" }
     } else {
-        list = todo.getList(target.id);
+        list = todo.getList(id);
     }
     if (!list) return;
 
-    domController.updateSelectedList(list);
+    domController.setActiveList(list);
+    viewQuery.setActiveList(list);
 
-    viewQuery.setList(list);
     domController.displayItems(todo.getItems(viewQuery));
 })
 
@@ -203,6 +205,10 @@ pubSub.subscribe(events.addList, (listName) => {
 pubSub.subscribe(events.deleteList, (id) => {
     todo.removeList(id);
     pubSub.publish(events.listsChanged, todo.getLists());
-    domController.displayItems(todo.getItems(viewQuery));
 });
+
+pubSub.subscribe(events.listsChanged, () => {
+    domController.setLists(todo.getLists());
+    domController.displayItems(todo.getItems(viewQuery));
+})
 
