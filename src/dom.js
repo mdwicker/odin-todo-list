@@ -15,11 +15,11 @@ export const createDomController = function ({ lists, items } = {}) {
     // Initialize navigation list
     const navList = createNavList();
 
+    // Initialize Add Item button & form
+    setupAddItemUI({ lists });
+
     // Initialize view options
     setupViewOptions();
-
-    // Initialize Add Item button
-    setupAddItemForm(lists);
 
     // Initialize display items
     displayItems(items);
@@ -34,29 +34,6 @@ export const createDomController = function ({ lists, items } = {}) {
                 })
             });
         });
-    }
-
-    function setupAddItemForm(lists) {
-        const addItemBtn = document.getElementById("add-item");
-        const addItemForm = new ItemDetailsForm({ lists });
-
-        // initialize hidden form
-        const formNode = addItemForm.node;
-        formNode.classList.add("hidden");
-        addItemBtn.after(formNode);
-
-
-        // replace button with form on button click
-        addItemBtn.addEventListener("click", () => {
-            formNode.classList.remove("hidden");
-            addItemBtn.classList.add("hidden");
-        });
-
-        // replace form with button on submit
-        formNode.addEventListener("submit", () => {
-            formNode.classList.add("hidden");
-            addItemBtn.classList.remove("hidden");
-        })
     }
 
     function displayItems(items) {
@@ -100,9 +77,14 @@ export const createDomController = function ({ lists, items } = {}) {
         }
     };
 
+    function setLists(lists) {
+        navList.setLists(lists);
+        addItemUI.setLists(lists);
+    }
+
     return {
         displayItems, removeItem, updateItem,
-        setLists: navList.setLists, setActiveList: navList.setActiveList
+        setLists, setActiveList: navList.setActiveList
     }
 }
 
@@ -110,9 +92,8 @@ export const createDomController = function ({ lists, items } = {}) {
 
 
 
-// Todo Items
 
-export class TodoItemNode {
+class TodoItemNode {
     #checkbox;
     #title;
     #description;
@@ -246,25 +227,24 @@ export class TodoItemNode {
     }
 }
 
-
-// Item Details Form
-
-export class ItemDetailsForm {
-    #titleInput;
+class ItemDetailsForm {
+    #listSelectNode;
     #item;
+    #listsChangedCallback
 
-    constructor({ item, lists } = {}) {
+    constructor({ item, lists = [] } = {}) {
         this.#item = item;
 
         this.lists = lists;
         this.node = createNode({ type: "form", classes: ["todo-item"] });
         this.node.append(
             this.#createTitleInput(),
-            this.#createListInput(),
+            this.#createListInput(lists),
             this.#createDescriptionInput(),
             this.#createFormBottom()
         );
 
+        // Handle form submission behavior
         this.node.addEventListener("submit", (e) => {
             e.preventDefault();
             const submitBtn = e.submitter.value;
@@ -279,6 +259,10 @@ export class ItemDetailsForm {
 
             this.node.reset();
         })
+
+        // Update avaiable lists when lists are set
+        this.#listsChangedCallback = (lists) => this.#setListOptions(lists);
+        pubSub.subscribe(events.listsChanged, this.#listsChangedCallback);
     }
 
     #createFormBottom() {
@@ -328,39 +312,40 @@ export class ItemDetailsForm {
         return titleNode;
     }
 
-    #createListInput() {
+    #createListInput(lists) {
+        // this creates an empty select node, which is populated elsewhere
         const label = createNode({ type: "label", text: "List" });
         label.for = "new-item-list";
-        const input = createNode({ type: "select", id: "new-item-list" });
-        input.name = "listId";
+        this.#listSelectNode = createNode({ type: "select", id: "new-item-list" });
+        this.#listSelectNode.name = "listId";
 
-        input.append(...this.#createListOptions(this.lists));
-
-        pubSub.subscribe(events.listsChanged, (lists) => {
-            while (input.lastElementChild) {
-                input.removeChild(input.lastElementChild);
-            }
-            input.append(...this.#createListOptions(lists));
-        })
+        if (lists) this.#setListOptions(lists);
 
         const listNode = createNode({ classes: ["form-control"] });
-        listNode.append(label, input);
+        listNode.append(label, this.#listSelectNode);
 
         return listNode;
     }
 
-    #createListOptions(lists) {
-        const options = []
+    #clearListOptions() {
+        const options = this.#listSelectNode;
+        while (options.lastElementChild) {
+            options.removeChild(options.lastElementChild);
+        }
+    }
+
+    #setListOptions(lists) {
+        this.#clearListOptions();
+
         for (const list of lists) {
             const option = createNode({ type: "option", text: list.title });
             option.value = list.id;
-            if (this.#item && list.id === String(this.#item.listId)) {
+            if (this.#item && (list.id === this.#item.listId)) {
                 option.selected = true;
             }
 
-            options.push(option);
+            this.#listSelectNode.append(option);
         }
-        return options;
     }
 
     #createDescriptionInput() {
@@ -449,9 +434,12 @@ export class ItemDetailsForm {
             pubSub.publish(events.deleteItem, this.#item.id);
         }
     }
+
+    destroy() {
+        pubSub.subscribe(events.listsChanged, this.#listsChangedCallback);
+    }
 }
 
-// Nav List
 function createNavList() {
     const FIXED_LIST_ID = "all";
     const FIXED_LIST_NODE = document.getElementById("all-items");
@@ -592,6 +580,22 @@ function createNavList() {
     return {
         setLists, setActiveList
     }
+}
+
+function setupAddItemUI({ lists = [] }) {
+    const addItemBtn = document.getElementById("add-item");
+    const addItemForm = new ItemDetailsForm({ lists });
+
+
+    // replace button with form on button click
+    addItemBtn.addEventListener("click", () => {
+        addItemBtn.replaceWith(addItemForm.node);
+    });
+
+    // restore "add item" button after form is submitted
+    addItemForm.node.addEventListener("submit", () => {
+        addItemForm.node.replaceWith(addItemBtn);
+    });
 }
 
 

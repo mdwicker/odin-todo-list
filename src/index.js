@@ -1,7 +1,7 @@
 import "./reset.css";
 import "./styles.css";
 import { todo } from './todo.js';
-import { ItemDetailsForm, createDomController } from './dom.js';
+import { createDomController } from './dom.js';
 import { events, pubSub } from './pubSub.js';
 
 
