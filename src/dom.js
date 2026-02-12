@@ -3,40 +3,239 @@ import { pubSub, events } from "./pubSub.js";
 
 
 export const createDomController = function ({ lists, items } = {}) {
-    // set up currently state
-    const itemNodes = {};
+    // Initialize UI compoonents
+    setupAddItemUI({ lists });
+    setupViewOptions();
+    const navList = createNavList();
+    const todoItemContainer = createTodoItemContainer({ items, lists });
+
+
+    const setLists = function (lists) {
+        navList.setLists(lists);
+        addItemUI.setLists(lists);
+        todoItemContainer.setLists(lists);
+    }
+
+    return {
+        setLists,
+        displayItems: todoItemContainer.displayItems,
+        removeItem: todoItemContainer.removeItem,
+        updateItem: todoItemContainer.updateItem,
+        setActiveList: navList.setActiveList,
+    }
+}
+
+
+// UI Components
+
+function setupAddItemUI({ lists = [] }) {
+    const addItemBtn = document.getElementById("add-item");
+    const addItemForm = new ItemDetailsForm({ lists });
+
+
+    // replace button with form on button click
+    addItemBtn.addEventListener("click", () => {
+        addItemBtn.replaceWith(addItemForm.node);
+    });
+
+    // restore "add item" button after form is submitted
+    addItemForm.node.addEventListener("submit", () => {
+        addItemForm.node.replaceWith(addItemBtn);
+    });
+}
+
+function setupViewOptions() {
+    const viewOptions = document.querySelector(".view-options");
+    viewOptions.querySelectorAll("select").forEach((viewOption) => {
+        viewOption.addEventListener("change", () => {
+            pubSub.publish(events.changeViewOption, {
+                option: viewOption.id,
+                value: viewOption.value
+            })
+        });
+    });
+
+    return viewOptions;
+}
+
+function createNavList() {
+    const FIXED_LIST_ID = "all";
+    const FIXED_LIST_NODE = document.getElementById("all-items");
+
+    const listHeader = document.querySelector('.list-title');
+
     const listNodes = {};
 
-    // cache DOM elements
-    const container = document.querySelector('.todo-items');
-    const listHeader = document.querySelector('.list-title');
-    const addListBtn = document.getElementById("add-list");
+    const allItems = document.getElementById("all-items");
+    listNodes[FIXED_LIST_ID] = FIXED_LIST_NODE;
 
-    // Initialize navigation list
-    const navList = createNavList();
+    wireListLinks();
+    setupAddListInteraction();
 
-    // Initialize Add Item button & form
-    setupAddItemUI({ lists });
 
-    // Initialize view options
-    setupViewOptions();
+    function wireListLinks() {
+        const navList = document.querySelector('.nav-list');
 
-    // Initialize display items
-    displayItems(items);
+        navList.addEventListener("click", (e) => {
+            const navLink = e.target.closest(".nav-link");
+            if (!navLink) return;
 
-    function setupViewOptions() {
-        const viewOptions = document.querySelector(".view-options");
-        viewOptions.querySelectorAll("select").forEach((viewOption) => {
-            viewOption.addEventListener("change", () => {
-                pubSub.publish(events.changeViewOption, {
-                    option: viewOption.id,
-                    value: viewOption.value
-                })
-            });
+            let listId = navLink.dataset.listId;
+            if (!listId) return;
+
+            if (listId !== FIXED_LIST_ID) {
+                listId = Number(listId);
+            }
+
+            if (e.target.classList.contains("delete-list") &&
+                confirm(`Do you want to delete this list?`)) {
+                pubSub.publish(events.deleteList, listId);
+            } else {
+                pubSub.publish(events.clickNavList, listId);
+            }
         });
     }
 
-    function displayItems(items) {
+    function setupAddListInteraction() {
+        const addListBtn = document.getElementById("add-list");
+        const addListForm = createAddListForm();
+
+        addListBtn.addEventListener("click", () => {
+            addListBtn.replaceWith(addListForm);
+        });
+
+        addListForm.addEventListener("submit", (e) => {
+            // Prevent page refresh
+            e.preventDefault();
+
+            // Capture and normalize submission
+            let listName = addListInput.value;
+            listName = listName.trim();
+
+            // Reset
+            addListForm.reset();
+            addListForm.replaceWith(addListBtn);
+
+            // Publish new list name if not blank
+            if (listName) {
+                pubSub.publish(events.addList, listName);
+            }
+        });
+    }
+
+    function createAddListForm() {
+        const addListForm = createNode({ type: "form", id: "add-list-form" });
+        const addListInput = createNode({ type: "input" });
+        addListInput.name = "list-name";
+        addListInput.ariaLabel = "new list input"
+        addListForm.append(
+            addListInput,
+            createNode({ type: "button", classes: ["save"], text: "Save" })
+        );
+
+        return addListForm;
+    }
+
+    function createListNode(list) {
+        const listNode = createNode({
+            type: "li",
+            classes: ["nav-link"],
+        });
+        listNode.dataset.listId = list.id;
+
+        const nodeContents = []
+
+        const titleSpan = createNode({ type: "span", text: list.title });
+        nodeContents.push(titleSpan);
+
+        if (list.canDelete) {
+            const deleteSpan = createNode({
+                type: "span",
+                classes: ["delete-list"],
+                text: "ⓧ"
+            });
+            deleteSpan.ariaLabel = "Delete list";
+
+            nodeContents.push(deleteSpan);
+        }
+
+        listNode.append(...nodeContents);
+        return listNode;
+    }
+
+    function clearLists() {
+        for (const [id, node] of Object.entries(listNodes)) {
+            if (id !== FIXED_LIST_ID) {
+                node.remove();
+                delete listNodes[id];
+            }
+        }
+    }
+
+    function renderLists(lists) {
+        // reverse list to leave oldest on top
+        // (and also the default on the very top)
+        for (const list of lists.reverse()) {
+            const listNode = createListNode(list)
+            listNodes[list.id] = listNode;
+            FIXED_LIST_NODE.after(listNode);
+        }
+    }
+
+    const setLists = function (lists) {
+        clearLists();
+        renderLists(lists);
+    }
+
+    const setActiveList = function (list) {
+        for (const [id, node] of Object.entries(listNodes)) {
+            node.classList.toggle("selected", id == list.id);
+        }
+
+        listHeader.textContent = list.title;
+    }
+
+    return {
+        setLists, setActiveList
+    }
+}
+
+function createTodoItemContainer({ items, lists } = {}) {
+    // cache dom container
+    const container = document.querySelector('.todo-items');
+
+    // variables to store current state
+    const itemNodes = {};
+    let currentLists = lists; // needed for item edit forms
+
+    // initialize
+    if (items) displayItems(items);
+
+
+    function initializeItemNode(item) {
+        // create node object
+        const itemNode = new TodoItemNode({ item });
+
+        // store by ID
+        itemNodes[item.id] = itemNode;
+
+        // wire edit button behavior
+        itemNode.editBtn.addEventListener("click", () => {
+            // display edit form when needed
+            const editForm = new ItemDetailsForm({ item, lists: currentLists });
+            itemNode.node.replaceWith(editForm.node);
+
+            // clean up edit form upon submission
+            editForm.node.addEventListener("submit", () => {
+                editForm.node.replaceWith(itemNode.node);
+                editForm.destroy();
+            })
+        });
+
+        container.append(itemNode.node);
+    }
+
+    const displayItems = function (items) {
         // Clear displayed items
         for (const [id, item] of Object.entries(itemNodes)) {
             item.node.remove();
@@ -45,22 +244,11 @@ export const createDomController = function ({ lists, items } = {}) {
 
         // add new items
         for (const item of items) {
-            const itemNode = new TodoItemNode({ item });
-            itemNodes[item.id] = itemNode;
-
-            itemNode.editBtn.addEventListener("click", () => {
-                const editForm = new ItemDetailsForm({ item, lists });
-                itemNode.node.replaceWith(editForm.node);
-                editForm.node.addEventListener("submit", () => {
-                    editForm.node.remove();
-                })
-            });
-
-            container.append(itemNode.node);
+            initializeItemNode(item);
         }
-    };
+    }
 
-    function removeItem(id) {
+    const removeItem = function (id) {
         if (id in itemNodes) {
             itemNodes[id].node.remove();
             delete itemNodes[id];
@@ -69,7 +257,7 @@ export const createDomController = function ({ lists, items } = {}) {
         }
     };
 
-    function updateItem(item) {
+    const updateItem = function (item) {
         if (item.id in itemNodes) {
             itemNodes[item.id].render(item);
         } else {
@@ -77,21 +265,15 @@ export const createDomController = function ({ lists, items } = {}) {
         }
     };
 
-    function setLists(lists) {
-        navList.setLists(lists);
-        addItemUI.setLists(lists);
+    const setLists = function (lists) {
+        currentLists = lists;
     }
 
     return {
         displayItems, removeItem, updateItem,
-        setLists, setActiveList: navList.setActiveList
-    }
+        setLists
+    };
 }
-
-
-
-
-
 
 class TodoItemNode {
     #checkbox;
@@ -208,7 +390,12 @@ class TodoItemNode {
         if (!this.#expandBtn || !this.#details) return;
 
         const expanded = this.#expandBtn.getAttribute("aria-expanded") === "true";
-        this.#expandBtn.setAttribute("aria-expanded", !expanded);
+
+        // toggle aria attribute
+        this.#expandBtn.setAttribute(
+            "aria-expanded",
+            expanded ? "false" : "true"
+        );
 
         this.#details.style.maxHeight = expanded ? "0px" : `${this.#details.scrollHeight}px`;
         this.#details.classList.toggle("hidden", expanded);
@@ -230,11 +417,14 @@ class TodoItemNode {
 class ItemDetailsForm {
     #listSelectNode;
     #item;
+
+    // store this to enable unsubscription on destroy
     #listsChangedCallback
 
     constructor({ item, lists = [] } = {}) {
         this.#item = item;
 
+        // Create DOM elements
         this.lists = lists;
         this.node = createNode({ type: "form", classes: ["todo-item"] });
         this.node.append(
@@ -244,25 +434,7 @@ class ItemDetailsForm {
             this.#createFormBottom()
         );
 
-        // Handle form submission behavior
-        this.node.addEventListener("submit", (e) => {
-            e.preventDefault();
-            const submitBtn = e.submitter.value;
-
-            if (submitBtn === "save") {
-                this.#save();
-            } else if (submitBtn === "cancel") {
-                this.#cancel();
-            } else if (submitBtn === "delete") {
-                this.#delete();
-            }
-
-            this.node.reset();
-        })
-
-        // Update avaiable lists when lists are set
-        this.#listsChangedCallback = (lists) => this.#setListOptions(lists);
-        pubSub.subscribe(events.listsChanged, this.#listsChangedCallback);
+        this.#wireEvents();
     }
 
     #createFormBottom() {
@@ -435,167 +607,32 @@ class ItemDetailsForm {
         }
     }
 
-    destroy() {
+    #wireEvents() {
+        // Handle form submission behavior
+        this.node.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const submitBtn = e.submitter.value;
+
+            if (submitBtn === "save") {
+                this.#save();
+            } else if (submitBtn === "cancel") {
+                this.#cancel();
+            } else if (submitBtn === "delete") {
+                this.#delete();
+            }
+
+            this.node.reset();
+        })
+
+        // Update avaiable lists when lists are set
+        this.#listsChangedCallback = (lists) => this.#setListOptions(lists);
         pubSub.subscribe(events.listsChanged, this.#listsChangedCallback);
     }
-}
 
-function createNavList() {
-    const FIXED_LIST_ID = "all";
-    const FIXED_LIST_NODE = document.getElementById("all-items");
-
-    const listHeader = document.querySelector('.list-title');
-
-    const listNodes = {};
-
-    const allItems = document.getElementById("all-items");
-    listNodes[FIXED_LIST_ID] = FIXED_LIST_NODE;
-
-    wireListLinks();
-    setupAddListInteraction();
-
-
-    function wireListLinks() {
-        const navList = document.querySelector('.nav-list');
-
-        navList.addEventListener("click", (e) => {
-            const navLink = e.target.closest(".nav-link");
-            if (!navLink) return;
-
-            let listId = navLink.dataset.listId;
-            if (!listId) return;
-
-            if (listId !== FIXED_LIST_ID) {
-                listId = Number(listId);
-            }
-
-            if (e.target.classList.contains("delete-list") &&
-                confirm(`Do you want to delete this list?`)) {
-                pubSub.publish(events.deleteList, listId);
-            } else {
-                pubSub.publish(events.clickNavList, listId);
-            }
-        });
+    destroy() {
+        pubSub.unsubscribe(events.listsChanged, this.#listsChangedCallback);
+        if (this.node.parentElement) this.node.remove();
     }
-
-    function setupAddListInteraction() {
-        const addListBtn = document.getElementById("add-list");
-        const addListForm = createAddListForm();
-
-        addListBtn.addEventListener("click", () => {
-            addListBtn.replaceWith(addListForm);
-        });
-
-        addListForm.addEventListener("submit", (e) => {
-            // Prevent page refresh
-            e.preventDefault();
-
-            // Capture and normalize submission
-            let listName = addListInput.value;
-            listName = listName.trim();
-
-            // Reset
-            addListForm.reset();
-            addListForm.replaceWith(addListBtn);
-
-            // Publish new list name if not blank
-            if (listName) {
-                pubSub.publish(events.addList, listName);
-            }
-        });
-    }
-
-    function createAddListForm() {
-        const addListForm = createNode({ type: "form", id: "add-list-form" });
-        const addListInput = createNode({ type: "input" });
-        addListInput.name = "list-name";
-        addListInput.ariaLabel = "new list input"
-        addListForm.append(
-            addListInput,
-            createNode({ type: "button", classes: ["save"], text: "Save" })
-        );
-
-        return addListForm;
-    }
-
-    function createListNode(list) {
-        const listNode = createNode({
-            type: "li",
-            classes: ["nav-link"],
-        });
-        listNode.dataset.listId = list.id;
-
-        const nodeContents = []
-
-        const titleSpan = createNode({ type: "span", text: list.title });
-        nodeContents.push(titleSpan);
-
-        if (list.canDelete) {
-            const deleteSpan = createNode({
-                type: "span",
-                classes: ["delete-list"],
-                text: "ⓧ"
-            });
-            deleteSpan.ariaLabel = "Delete list";
-
-            nodeContents.push(deleteSpan);
-        }
-
-        listNode.append(...nodeContents);
-        return listNode;
-    }
-
-    function clearLists() {
-        for (const [id, node] of Object.entries(listNodes)) {
-            if (id !== FIXED_LIST_ID) {
-                node.remove();
-                delete listNodes[id];
-            }
-        }
-    }
-
-    function renderLists(lists) {
-        // reverse list to leave oldest on top
-        // (and also the default on the very top)
-        for (const list of lists.reverse()) {
-            const listNode = createListNode(list)
-            listNodes[list.id] = listNode;
-            FIXED_LIST_NODE.after(listNode);
-        }
-    }
-
-    const setLists = function (lists) {
-        clearLists();
-        renderLists(lists);
-    }
-
-    const setActiveList = function (list) {
-        for (const [id, node] of Object.entries(listNodes)) {
-            node.classList.toggle("selected", id == list.id);
-        }
-
-        listHeader.textContent = list.title;
-    }
-
-    return {
-        setLists, setActiveList
-    }
-}
-
-function setupAddItemUI({ lists = [] }) {
-    const addItemBtn = document.getElementById("add-item");
-    const addItemForm = new ItemDetailsForm({ lists });
-
-
-    // replace button with form on button click
-    addItemBtn.addEventListener("click", () => {
-        addItemBtn.replaceWith(addItemForm.node);
-    });
-
-    // restore "add item" button after form is submitted
-    addItemForm.node.addEventListener("submit", () => {
-        addItemForm.node.replaceWith(addItemBtn);
-    });
 }
 
 
