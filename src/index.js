@@ -29,8 +29,6 @@ const fillerItems = [
     { title: "Senate Session", description: "Listen to the debate on Germanic borders", duedate: "2026-02-11", priority: 4 }
 ];
 
-// const fillerLists = 
-
 for (const item of fillerItems) {
     todo.addItem(item);
 }
@@ -38,7 +36,7 @@ for (const item of fillerItems) {
 todo.addList("Work");
 
 
-
+// Initialize view options
 
 const DEFAULT_LIST = "all";
 
@@ -134,7 +132,8 @@ const viewQuery = (function () {
     }
 })();
 
-// App initialization
+
+// Initialize DOM state
 
 const domController = createDomController({
     lists: todo.getLists(),
@@ -144,10 +143,22 @@ const domController = createDomController({
 domController.setActiveList({ id: "all", title: "All Items" });
 domController.setLists(todo.getLists());
 
+setUpSubscriptions();
 
-// Event wiring
 
-pubSub.subscribe(events.clickNavList, (id) => {
+function setUpSubscriptions() {
+    pubSub.subscribe(events.clickNavList, handleNavListClick);
+    pubSub.subscribe(events.itemChecked, handleCheckedItem);
+    pubSub.subscribe(events.saveItemDetails, handleSavedDetails);
+    pubSub.subscribe(events.deleteItem, handleItemDeletion);
+    pubSub.subscribe(events.changeViewOption, handleChangedViewOption);
+    pubSub.subscribe(events.addList, handleListAddition);
+    pubSub.subscribe(events.deleteList, handleListDeletion);
+    pubSub.subscribe(events.listsChanged, updateDomLists);
+
+}
+
+function handleNavListClick(id) {
     let list;
     if (id === "all") {
         list = { id: "all", title: "All Items" }
@@ -160,16 +171,16 @@ pubSub.subscribe(events.clickNavList, (id) => {
     viewQuery.setActiveList(list);
 
     domController.displayItems(todo.getItems(viewQuery));
-})
+}
 
-pubSub.subscribe(events.itemChecked, (e) => {
-    const item = todo.getItem(e.id);
-    item.toggleComplete(e.checked);
-});
+function handleCheckedItem(checkedItem) {
+    const item = todo.getItem(checkedItem.id);
+    item.toggleComplete(checkedItem.checked);
+}
 
-pubSub.subscribe(events.saveItemDetails, (e) => {
+function handleSavedDetails(form) {
     const details = {};
-    for (const [key, value] of e.data) {
+    for (const [key, value] of form.data) {
         details[key] = value;
     }
 
@@ -178,37 +189,35 @@ pubSub.subscribe(events.saveItemDetails, (e) => {
     if ('isComplete' in details) details.isComplete = details.isComplete === true || details.isComplete === 'true';
     if ('listId' in details) details.listId = Number(details.listId);
 
-    if (e.id) {
-        todo.editItem(e.id, details);
+    if (form.id) {
+        todo.editItem(form.id, details);
     } else {
         todo.addItem(details);
     }
 
-    domController.displayItems(todo.getItems(viewQuery))
-});
+    domController.displayItems(todo.getItems(viewQuery));
+}
 
-pubSub.subscribe(events.deleteItem, (id) => {
+function handleItemDeletion(id) {
     todo.removeItem(id);
     domController.displayItems(todo.getItems(viewQuery));
-});
+}
 
-pubSub.subscribe(events.changeViewOption, (e) => {
-    viewQuery.setOptions({ option: e.option, selection: e.value });
+function handleChangedViewOption(changed) {
+    viewQuery.setOptions({ option: changed.option, selection: changed.value });
     domController.displayItems(todo.getItems(viewQuery));
-});
+}
 
-pubSub.subscribe(events.addList, (listName) => {
+function handleListAddition(listName) {
     todo.addList(listName);
     pubSub.publish(events.listsChanged, todo.getLists());
-});
+}
 
-pubSub.subscribe(events.deleteList, (id) => {
+function handleListDeletion(id) {
     todo.removeList(id);
     pubSub.publish(events.listsChanged, todo.getLists());
-});
+}
 
-pubSub.subscribe(events.listsChanged, () => {
+function updateDomLists() {
     domController.setLists(todo.getLists());
-    domController.displayItems(todo.getItems(viewQuery));
-})
-
+}

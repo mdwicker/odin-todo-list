@@ -12,7 +12,6 @@ export const createDomController = function ({ lists, items } = {}) {
 
     const setLists = function (lists) {
         navList.setLists(lists);
-        addItemUI.setLists(lists);
         todoItemContainer.setLists(lists);
     }
 
@@ -235,7 +234,7 @@ function createTodoItemContainer({ items, lists } = {}) {
         container.append(itemNode.node);
     }
 
-    const displayItems = function (items) {
+    function displayItems(items) {
         // Clear displayed items
         for (const [id, item] of Object.entries(itemNodes)) {
             item.node.remove();
@@ -392,10 +391,7 @@ class TodoItemNode {
         const expanded = this.#expandBtn.getAttribute("aria-expanded") === "true";
 
         // toggle aria attribute
-        this.#expandBtn.setAttribute(
-            "aria-expanded",
-            expanded ? "false" : "true"
-        );
+        this.#expandBtn.setAttribute("aria-expanded", expanded ? "false" : "true");
 
         this.#details.style.maxHeight = expanded ? "0px" : `${this.#details.scrollHeight}px`;
         this.#details.classList.toggle("hidden", expanded);
