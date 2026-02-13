@@ -108,7 +108,7 @@ function createNavList() {
             e.preventDefault();
 
             // Capture and normalize submission
-            let listName = addListInput.value;
+            let listName = addListForm.querySelector("input").value;
             listName = listName.trim();
 
             // Reset
@@ -226,7 +226,6 @@ function createTodoItemContainer({ items, lists } = {}) {
 
             // clean up edit form upon submission
             editForm.node.addEventListener("submit", () => {
-                editForm.node.replaceWith(itemNode.node);
                 editForm.destroy();
             })
         });
@@ -298,11 +297,15 @@ class TodoItemNode {
         if (item) {
             this.render(item);
             this.#checkbox.addEventListener("change", () => {
-                pubSub.publish(events.itemChecked, { id: item.id, checked: this.node.checked });
+                pubSub.publish(events.checkItem, { id: item.id, checked: this.node.checked });
             })
         }
 
         this.#expandBtn.addEventListener("click", () => { this.#toggleDetails(); });
+    }
+
+    get priority() {
+        return this.#priority;
     }
 
     #createLeft() {
