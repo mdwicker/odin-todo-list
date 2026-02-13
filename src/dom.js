@@ -567,7 +567,9 @@ class ItemDetailsForm {
         const input = createNode({ type: "input", id: "new-item-priority" });
         input.name = "priority";
         input.type = "number";
-        input.defaultValue = 1;
+        input.min = "0";
+        input.max = "5";
+        input.defaultValue = "1";
         if (this.#item) input.value = this.#item.priority;
 
         const priorityNode = createNode({ classes: ["form-control"] })
