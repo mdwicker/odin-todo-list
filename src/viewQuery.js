@@ -105,7 +105,7 @@ const viewQuery = (function () {
         "priorityFilter": viewStorage.getOption("priorityFilter") || "all",
         "completionFilter": viewStorage.getOption("completionFilter") || "all",
         "sortBy": viewStorage.getOption("sortBy") || "duedate",
-        "sortOrder": viewStorage.getOption("sortOrder") || "desc",
+        "sortOrder": viewStorage.getOption("sortOrder") || "asc",
     }
 
     function setActiveList(targetList) {

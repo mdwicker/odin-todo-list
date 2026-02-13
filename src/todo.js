@@ -1,17 +1,21 @@
 const DEFAULT_LIST_ID = 1;
 
 class TodoItem {
-    static usedIds = new Set();
+    static #usedIds = new Set();
+
+    static resetIds() {
+        this.#usedIds.clear();
+    }
 
     static #addUsedId(id) {
-        if (this.usedIds.has(id)) {
+        if (this.#usedIds.has(id)) {
             throw new Error(`ID ${id} already used.`)
         }
-        else this.usedIds.add(id);
+        else this.#usedIds.add(id);
     }
 
     static #nextId() {
-        const id = Math.max(0, ...this.usedIds) + 1;
+        const id = Math.max(0, ...this.#usedIds) + 1;
         this.#addUsedId(id);
         return id;
     }
@@ -158,15 +162,26 @@ class TodoItem {
 }
 
 class TodoList {
-    static usedIds = new Set();
+    static #usedIds = new Set();
+
+    static resetIds() {
+        this.#usedIds.clear();
+        this.#usedIds.add(DEFAULT_LIST_ID);
+    }
 
     static #addUsedId(id) {
-        this.usedIds.add(id);
+        this.#usedIds.add(id);
     }
 
     static #nextId() {
-        const id = Math.max(0, ...this.usedIds) + 1;
-        this.#addUsedId(id);
+        let id = Math.max(0, ...this.#usedIds) + 1;
+
+        if (id === DEFAULT_LIST_ID) {
+            id = this.#nextId();
+        } else {
+            this.#addUsedId(id);
+        }
+
         return id;
     }
 
@@ -368,14 +383,12 @@ const todo = (function () {
     const items = {};
     const lists = {};
 
-    loadStoredData();
+    lists[DEFAULT_LIST_ID] = new TodoList({
+        title: "Main",
+        id: DEFAULT_LIST_ID
+    });
 
-    if (!(DEFAULT_LIST_ID in lists)) {
-        lists[DEFAULT_LIST_ID] = new TodoList({
-            title: "Main",
-            id: DEFAULT_LIST_ID
-        });
-    }
+    loadStoredData();
 
 
     function getItem(id) {
@@ -477,7 +490,6 @@ const todo = (function () {
         return list;
     }
 
-
     function removeList(id) {
         const list = lists[id];
         if (!list) {
@@ -502,7 +514,7 @@ const todo = (function () {
 
     function loadStoredData() {
         // Load saved lists
-        TodoList.usedIds.clear();
+        TodoList.resetIds();
         const savedLists = todoStorage.getLists();
 
         for (const listInfo of savedLists) {
@@ -511,7 +523,7 @@ const todo = (function () {
         }
 
         // Load saved items
-        TodoItem.usedIds.clear();
+        TodoItem.resetIds();
         const savedItems = todoStorage.getItems();
 
         for (const itemInfo of savedItems) {

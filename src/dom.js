@@ -138,7 +138,7 @@ function createNavList() {
         const addListForm = createNode({ type: "form", id: "add-list-form" });
         const addListInput = createNode({ type: "input" });
         addListInput.name = "list-name";
-        addListInput.ariaLabel = "new list input"
+        addListInput.setAttribute("aria-label", "New list input");
         addListForm.append(
             addListInput,
             createNode({ type: "button", classes: ["save"], text: "Save" })
@@ -165,7 +165,7 @@ function createNavList() {
                 classes: ["delete-list"],
                 text: "ⓧ"
             });
-            deleteSpan.ariaLabel = "Delete list";
+            deleteSpan.setAttribute("aria-label", "Delete list");
 
             nodeContents.push(deleteSpan);
         }
@@ -186,7 +186,7 @@ function createNavList() {
     function renderLists(lists) {
         // reverse list to leave oldest on top
         // (and also the default on the very top)
-        for (const list of lists.reverse()) {
+        for (const list of [...lists].reverse()) {
             const listNode = createListNode(list)
             listNodes[list.id] = listNode;
             FIXED_LIST_NODE.after(listNode);
@@ -309,7 +309,7 @@ class TodoItemNode {
         if (item) {
             this.render(item);
             this.#checkbox.addEventListener("change", () => {
-                pubSub.publish(events.checkItem, { id: item.id, checked: this.node.checked });
+                pubSub.publish(events.checkItem, { id: item.id, checked: this.#checkbox.checked });
             })
         }
 
@@ -388,15 +388,15 @@ class TodoItemNode {
 
     #createExpandButton() {
         const expandButton = createNode({ type: "button", classes: ["expand"] });
-        expandButton.ariaLabel = "toggle details";
-        expandButton.ariaExpanded = "false";
+        expandButton.setAttribute("aria-label", "toggle details");
+        expandButton.setAttribute("aria-expanded", "false");
         return expandButton;
     }
 
     #createCheckbox() {
         this.#checkbox = createNode({ type: "input" });
         this.#checkbox.type = "checkbox";
-        this.#checkbox.ariaLabel = "item completion toggle";
+        this.#checkbox.setAttribute("aria-label", "item completion toggle");
         return this.#checkbox;
     }
 
@@ -426,14 +426,18 @@ class TodoItemNode {
 }
 
 class ItemDetailsForm {
+    static #nextId = 1;
     #listSelectNode;
     #item;
+    #formId;
 
     // store this to enable unsubscription on destroy
     #listsChangedCallback
 
     constructor({ item, lists = [] } = {}) {
         this.#item = item;
+        this.#formId = ItemDetailsForm.#nextId;
+        ItemDetailsForm.#nextId++;
 
         // Create DOM elements
         this.lists = lists;
@@ -484,8 +488,8 @@ class ItemDetailsForm {
 
     #createTitleInput() {
         const label = createNode({ type: "label", text: "Title" });
-        label.for = "new-item-title";
-        const input = createNode({ type: "input", id: "new-item-title" });
+        label.htmlFor = `new-item-title-${this.#formId}`;
+        const input = createNode({ type: "input", id: `new-item-title-${this.#formId}` });
         input.name = "title";
         input.type = "text";
         if (this.#item) input.value = this.#item.title;
@@ -498,8 +502,8 @@ class ItemDetailsForm {
     #createListInput(lists) {
         // this creates an empty select node, which is populated elsewhere
         const label = createNode({ type: "label", text: "List" });
-        label.for = "new-item-list";
-        this.#listSelectNode = createNode({ type: "select", id: "new-item-list" });
+        label.htmlFor = `new-item-list-${this.#formId}`;
+        this.#listSelectNode = createNode({ type: "select", id: `new-item-list-${this.#formId}` });
         this.#listSelectNode.name = "listId";
 
         if (lists) this.#setListOptions(lists);
@@ -533,8 +537,8 @@ class ItemDetailsForm {
 
     #createDescriptionInput() {
         const label = createNode({ type: "label", text: "Description" });
-        label.for = "new-item-description";
-        const input = createNode({ type: "input", id: "new-item-description" });
+        label.htmlFor = `new-item-description-${this.#formId}`;
+        const input = createNode({ type: "input", id: `new-item-description-${this.#formId}` });
         input.name = "description";
         input.type = "text";
         if (this.#item) input.value = this.#item.description;
@@ -546,8 +550,8 @@ class ItemDetailsForm {
 
     #createDuedateInput() {
         const label = createNode({ type: "label", text: "Due Date" });
-        label.for = "new-item-duedate";
-        const input = createNode({ type: "input", id: "new-item-duedate" });
+        label.htmlFor = `new-item-duedate-${this.#formId}`;
+        const input = createNode({ type: "input", id: `new-item-duedate-${this.#formId}` });
         input.name = "duedate";
         input.type = "date";
         input.defaultValue = format(new Date(), "yyyy-MM-dd");
@@ -563,8 +567,8 @@ class ItemDetailsForm {
 
     #createPriorityInput() {
         const label = createNode({ type: "label", text: "Priority" });
-        label.for = "new-item-priority";
-        const input = createNode({ type: "input", id: "new-item-priority" });
+        label.htmlFor = `new-item-priority-${this.#formId}`;
+        const input = createNode({ type: "input", id: `new-item-priority-${this.#formId}` });
         input.name = "priority";
         input.type = "number";
         input.min = "0";
