@@ -5,7 +5,7 @@ import { pubSub, events } from "./pubSub.js";
 export const createDomController = function ({ lists, items } = {}) {
     // Initialize UI compoonents
     setupAddItemUI({ lists });
-    setupViewOptions();
+    const viewOptions = createViewOptions();
     const navList = createNavList();
     const todoItemContainer = createTodoItemContainer({ items, lists });
 
@@ -21,6 +21,7 @@ export const createDomController = function ({ lists, items } = {}) {
         removeItem: todoItemContainer.removeItem,
         updateItem: todoItemContainer.updateItem,
         setActiveList: navList.setActiveList,
+        setViewOptions: viewOptions.set
     }
 }
 
@@ -43,7 +44,7 @@ function setupAddItemUI({ lists = [] }) {
     });
 }
 
-function setupViewOptions() {
+function createViewOptions() {
     const viewOptions = document.querySelector(".view-options");
     viewOptions.querySelectorAll("select").forEach((viewOption) => {
         viewOption.addEventListener("change", () => {
@@ -54,7 +55,18 @@ function setupViewOptions() {
         });
     });
 
-    return viewOptions;
+    function set(options) {
+        for (const [option, selection] of Object.entries(options)) {
+            const optionNode = document.getElementById(option);
+            if (optionNode) {
+                if (selection !== "all") {
+                    optionNode.value = String(selection)
+                };
+            }
+        }
+    }
+
+    return { node: viewOptions, set };
 }
 
 function createNavList() {

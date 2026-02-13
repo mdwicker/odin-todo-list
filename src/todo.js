@@ -220,7 +220,6 @@ class TodoList {
 
 const todoStorage = (function () {
     const DATA = "data";
-    const VIEWOPTIONS = "viewOptions";
 
     initializeStorage();
 
@@ -336,10 +335,6 @@ const todoStorage = (function () {
         }
 
         save({ key: DATA, data });
-
-        if (!(VIEWOPTIONS in localStorage)) {
-            save({ key: VIEWOPTIONS });
-        }
     }
 
     function storageAvailable(type) {
@@ -369,7 +364,7 @@ const todoStorage = (function () {
 })();
 
 
-export const todo = (function () {
+const todo = (function () {
     const items = {};
     const lists = {};
 
@@ -392,6 +387,9 @@ export const todo = (function () {
     }
 
     function getList(id) {
+        if (id === "all" || id === null) {
+            return { id: "all", title: "All Items" };
+        }
         const list = lists[id];
         if (!list) {
             throw new Error(`List ${id} not found.`);
@@ -532,5 +530,4 @@ export const todo = (function () {
     }
 })();
 
-
-
+export default todo;

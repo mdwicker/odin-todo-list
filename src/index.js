@@ -1,105 +1,11 @@
 import "./reset.css";
 import "./styles.css";
-import { todo } from './todo.js';
+import todo from './todo.js';
+import viewQuery from './viewQuery.js';
 import { createDomController } from './dom.js';
 import { events, pubSub } from './pubSub.js';
 
 
-// Initialize view options
-
-const DEFAULT_LIST = "all";
-
-const viewQuery = (function () {
-    let list = "all";
-    const options = {
-        "duedateFilter": DEFAULT_LIST,
-        "priorityFilter": "all",
-        "completionFilter": "all",
-        "sortBy": "duedate",
-        "sortOrder": "desc",
-    }
-
-    function setActiveList(targetList) {
-        list = targetList.id ?? targetList;
-    }
-
-    function setOptions({ option, selection } = {}) {
-        if (!(option in options)) {
-            throw new Error(`Option ${option} does not exist in viewQuery.`);
-        }
-
-        options[option] = selection;
-    }
-
-    function filter(item) {
-        if (options.duedateFilter !== "all") {
-            if (!duedateFilter(item, options.duedateFilter)) return false;
-        }
-
-        if (options.priorityFilter !== "all") {
-            const priority = Number(options.priorityFilter);
-            if (!item.matchesPriority(priority)) return false;
-        }
-
-        if (options.completionFilter !== "all") {
-            let completeFilter;
-
-            // normalize input from UI
-            if (options.completionFilter === "true") completeFilter = true;
-            if (options.completionFilter === "false") completeFilter = false;
-
-            if (!(item.isComplete === completeFilter)) return false;
-        }
-
-        return true;
-    }
-
-    function sort(a, b) {
-        let comparison;
-
-        if (options.sortBy === "duedate") {
-            comparison = a.compareDuedate(b);
-        } else if (options.sortBy === "priority") {
-            comparison = a.comparePriority(b);
-        }
-
-        if (!comparison) comparison = a.id - b.id;
-
-        if (options.sortOrder === "asc") {
-            return comparison;
-        } else if (options.sortOrder === "desc") {
-            return comparison * -1;
-        } else {
-            console.log(`${options.sortOrder} is not a valid sort order. Should be 'asc' or 'desc'.`);
-            return comparison;
-        }
-    }
-
-    function duedateFilter(item, dateFilter) {
-        const filters = {
-            "overdue": () => item.isOverdue(),
-            "today": () => item.isDueInExactly(0),
-            "tomorrow": () => item.isDueInExactly(1),
-            "week": () => item.isDueWithin(7),
-            "month": () => item.isDueWithin(30)
-        }
-
-        if (dateFilter === "all") return true;
-        if (!(dateFilter in filters)) return true;
-
-        return filters[dateFilter]();
-    }
-
-
-    return {
-        setActiveList, setOptions,
-        get listId() {
-            if (list === "all") return null;
-            return Number(list);
-        },
-        filter, sort
-    }
-})();
 
 
 // Initialize DOM state
@@ -109,8 +15,14 @@ const domController = createDomController({
     items: todo.getItems(viewQuery)
 });
 
-domController.setActiveList({ id: "all", title: "All Items" });
+// initialize lists
+const initialList = todo.getList(viewQuery.listId);
+domController.setActiveList(initialList);
 domController.setLists(todo.getLists());
+
+// initialize view options
+const initialViewOptions = viewQuery.getOptions();
+domController.setViewOptions(initialViewOptions);
 
 setUpSubscriptions();
 
